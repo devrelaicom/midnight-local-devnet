@@ -1,18 +1,13 @@
-# midnight-local-devnet
+# @aaronbassett/midnight-local-devnet
+
+[![npm version](https://img.shields.io/npm/v/@aaronbassett/midnight-local-devnet)](https://www.npmjs.com/package/@aaronbassett/midnight-local-devnet)
 
 A CLI and MCP (Model Context Protocol) server for managing a local Docker-based Midnight development network. It spins up a Midnight node, indexer, and proof server in Docker containers, initializes a genesis master wallet pre-loaded with NIGHT tokens and DUST, and provides commands to fund test accounts, generate wallets, and monitor network health -- all from the command line or from any MCP-compatible AI assistant.
 
 ## Prerequisites
 
-- **Node.js >= 22** (uses native ES modules and `node:` imports)
+- **Node.js >= 22**
 - **Docker** (Docker Desktop or Docker Engine with Compose v2)
-
-## Installation
-
-```bash
-npm install
-npm run build
-```
 
 ## Quick Start
 
@@ -21,33 +16,35 @@ npm run build
 Run with no arguments to enter interactive mode:
 
 ```bash
-npx midnight-devnet
+npx @aaronbassett/midnight-local-devnet
 ```
 
 Or start the network directly:
 
 ```bash
-npx midnight-devnet start
+npx @aaronbassett/midnight-local-devnet start
 ```
 
 ### MCP Server
 
-Add the server to your `.mcp.json` (Claude Code, Cursor, or any MCP client):
+Add to your MCP client configuration (Claude Code, Cursor, Windsurf, etc.):
 
 ```json
 {
   "mcpServers": {
     "midnight-devnet": {
-      "command": "node",
-      "args": ["--enable-source-maps", "/absolute/path/to/midnight-local-devnet/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "-p", "@aaronbassett/midnight-local-devnet", "midnight-devnet-mcp"]
     }
   }
 }
 ```
 
-The MCP server communicates over stdio and exposes tools, resources, and prompts that an AI assistant can use to manage the devnet on your behalf.
+The MCP server communicates over stdio and exposes tools and resources that an AI assistant can use to manage the devnet on your behalf.
 
 ## CLI Command Reference
+
+All commands can be run via `npx @aaronbassett/midnight-local-devnet <command>`.
 
 | Command | Description | Options |
 |---|---|---|
@@ -63,7 +60,7 @@ The MCP server communicates over stdio and exposes tools, resources, and prompts
 | `generate-accounts` | Generate random test accounts | `--count <n>`, `--format <mnemonic\|privateKey>`, `--output <path>`, `--fund`, `--register-dust` |
 | `interactive` | Start interactive menu mode | |
 
-Running the CLI with no arguments automatically enters interactive mode.
+Running with no arguments automatically enters interactive mode.
 
 ## MCP Tool Reference
 
@@ -147,6 +144,35 @@ const config = {
 
 You can also retrieve this configuration at runtime via the `get-network-config` MCP tool or the `devnet://config` MCP resource.
 
+## Development
+
+To work on this project locally:
+
+```bash
+git clone https://github.com/devrelaicom/midnight-local-devnet.git
+cd midnight-local-devnet
+npm install
+npm run build
+```
+
+Run the CLI from source:
+
+```bash
+node --enable-source-maps dist/cli.js start
+```
+
+Run the MCP server from source:
+
+```bash
+node --enable-source-maps dist/index.js
+```
+
+Run tests:
+
+```bash
+npm test
+```
+
 ## Troubleshooting
 
 ### Docker containers fail to start
@@ -174,15 +200,15 @@ lsof -i :6300
 Run the health check to see which service is not responding:
 
 ```bash
-npx midnight-devnet health
+npx @aaronbassett/midnight-local-devnet health
 ```
 
 Check the logs for the failing service:
 
 ```bash
-npx midnight-devnet logs --service node
-npx midnight-devnet logs --service indexer
-npx midnight-devnet logs --service proof-server
+npx @aaronbassett/midnight-local-devnet logs --service node
+npx @aaronbassett/midnight-local-devnet logs --service indexer
+npx @aaronbassett/midnight-local-devnet logs --service proof-server
 ```
 
 ### Clean restart
@@ -190,7 +216,7 @@ npx midnight-devnet logs --service proof-server
 If the network is in a broken state, do a clean restart that removes all volumes:
 
 ```bash
-npx midnight-devnet restart --remove-volumes
+npx @aaronbassett/midnight-local-devnet restart --remove-volumes
 ```
 
 This removes all chain data and starts fresh.
@@ -204,8 +230,12 @@ The master wallet must synchronize with the chain on first start. This can take 
 The tool detects running containers on startup. If you stopped the containers externally (e.g. via `docker compose down`), run `start` again:
 
 ```bash
-npx midnight-devnet start
+npx @aaronbassett/midnight-local-devnet start
 ```
+
+## Acknowledgments
+
+This project is based on [midnight-local-network](https://github.com/hbulgarini/midnight-local-network) by [@hbulgarini](https://github.com/hbulgarini). Thank you for the initial version that made this possible.
 
 ## License
 

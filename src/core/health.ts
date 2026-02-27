@@ -1,4 +1,5 @@
 import { defaultConfig } from './config.js';
+import type { NetworkConfig } from './types.js';
 
 export interface ServiceHealth {
   healthy: boolean;
@@ -30,11 +31,13 @@ async function checkEndpoint(url: string): Promise<ServiceHealth> {
   }
 }
 
-export async function checkAllHealth(): Promise<HealthReport> {
+export async function checkAllHealth(config?: NetworkConfig): Promise<HealthReport> {
+  const cfg = config ?? defaultConfig;
+  const indexerOrigin = new URL(cfg.indexer).origin;
   const [node, indexer, proofServer] = await Promise.all([
-    checkEndpoint(`${defaultConfig.node}/health`),
-    checkEndpoint(defaultConfig.indexer),
-    checkEndpoint(`${defaultConfig.proofServer}/version`),
+    checkEndpoint(`${cfg.node}/health`),
+    checkEndpoint(`${indexerOrigin}/ready`),
+    checkEndpoint(`${cfg.proofServer}/version`),
   ]);
 
   return {

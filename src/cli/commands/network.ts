@@ -79,7 +79,7 @@ export function registerNetworkCommands(program: Command, manager: NetworkManage
     .command('health')
     .description('Check health of all services')
     .action(async () => {
-      const health = await checkAllHealth();
+      const health = await checkAllHealth(manager.config);
       console.table({
         Node: { Healthy: health.node.healthy, 'Response (ms)': health.node.responseTime },
         Indexer: { Healthy: health.indexer.healthy, 'Response (ms)': health.indexer.responseTime },

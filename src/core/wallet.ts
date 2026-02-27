@@ -170,7 +170,7 @@ export function waitForSync(wallet: WalletFacade): Promise<unknown> {
   );
 }
 
-export function waitForFunds(wallet: WalletFacade): Promise<bigint> {
+export function waitForFunds(wallet: WalletFacade, timeoutMs = 60_000): Promise<bigint> {
   return Rx.firstValueFrom(
     wallet.state().pipe(
       Rx.throttleTime(10_000),
@@ -188,6 +188,7 @@ export function waitForFunds(wallet: WalletFacade): Promise<bigint> {
           (s.shielded?.balances[ledger.nativeToken().raw] ?? 0n),
       ),
       Rx.filter((balance) => balance > 0n),
+      Rx.timeout(timeoutMs),
     ),
   );
 }

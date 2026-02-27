@@ -24,7 +24,7 @@ export function createServer(manager: NetworkManager): McpServer {
   );
 
   registerNetworkTools(server, manager);
-  registerHealthTools(server);
+  registerHealthTools(server, manager);
   registerWalletTools(server, manager);
   registerFundingTools(server, manager);
   registerAccountTools(server, manager);

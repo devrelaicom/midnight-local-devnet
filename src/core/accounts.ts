@@ -4,6 +4,7 @@ import {
   generateNewMnemonic,
   mnemonicToSeed,
   initWalletFromMnemonic,
+  waitForFunds,
   registerNightForDust,
   closeWallet,
 } from './wallet.js';
@@ -70,19 +71,22 @@ export async function generateAndFundAccounts(
       logger?.info({ name: account.name }, 'Funding account...');
       const ctx = await initWalletFromMnemonic(mnemonic, config);
 
-      const address = UnshieldedPublicKey.fromKeyStore(ctx.unshieldedKeystore).address;
-      account.address = address;
+      try {
+        const address = UnshieldedPublicKey.fromKeyStore(ctx.unshieldedKeystore).address;
+        account.address = address;
 
-      await fundAccount(masterWallet, address, DEFAULT_NIGHT_AMOUNT);
+        await fundAccount(masterWallet, address, DEFAULT_NIGHT_AMOUNT);
+        await waitForFunds(ctx.wallet);
 
-      if (opts.registerDust) {
-        const dustOk = await registerNightForDust(ctx);
-        results.push({ ...account, funded: true, dustRegistered: dustOk });
-      } else {
-        results.push({ ...account, funded: true, dustRegistered: false });
+        if (opts.registerDust) {
+          const dustOk = await registerNightForDust(ctx);
+          results.push({ ...account, funded: true, dustRegistered: dustOk });
+        } else {
+          results.push({ ...account, funded: true, dustRegistered: false });
+        }
+      } finally {
+        await closeWallet(ctx);
       }
-
-      await closeWallet(ctx);
     } else {
       results.push({ ...account, funded: false, dustRegistered: false });
     }

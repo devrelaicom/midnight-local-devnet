@@ -233,6 +233,10 @@ The tool detects running containers on startup. If you stopped the containers ex
 npx @aaronbassett/midnight-local-devnet start
 ```
 
+## Acknowledgments
+
+This project is based on [midnight-local-network](https://github.com/hbulgarini/midnight-local-network) by [@hbulgarini](https://github.com/hbulgarini). Thank you for the initial version that made this possible.
+
 ## License
 
 MIT

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // src/index.ts
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createServer } from './mcp/server.js';

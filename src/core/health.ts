@@ -33,9 +33,10 @@ async function checkEndpoint(url: string): Promise<ServiceHealth> {
 
 export async function checkAllHealth(config?: NetworkConfig): Promise<HealthReport> {
   const cfg = config ?? defaultConfig;
+  const indexerOrigin = new URL(cfg.indexer).origin;
   const [node, indexer, proofServer] = await Promise.all([
     checkEndpoint(`${cfg.node}/health`),
-    checkEndpoint(cfg.indexer),
+    checkEndpoint(`${indexerOrigin}/ready`),
     checkEndpoint(`${cfg.proofServer}/version`),
   ]);
 

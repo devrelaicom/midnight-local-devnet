@@ -27,8 +27,8 @@
     "node": ">=22.0.0"
   },
   "bin": {
-    "midnight-local-devnet": "./dist/cli.js",
-    "midnight-devnet-mcp": "./dist/index.js"
+    "midnight-local-devnet": "dist/cli.js",
+    "midnight-devnet-mcp": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",

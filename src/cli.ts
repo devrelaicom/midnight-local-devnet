@@ -12,7 +12,10 @@ import { setLogger as setAccountsLogger } from './core/accounts.js';
 
 const manager = new NetworkManager();
 
-const logger = createLogger();
+const isInteractive = process.argv.length <= 2 || process.argv[2] === 'interactive';
+
+// In interactive mode, send logs to stderr so they don't stomp on the readline prompt
+const logger = createLogger('info', isInteractive ? process.stderr : process.stdout);
 setWalletLogger(logger);
 setFundingLogger(logger);
 setAccountsLogger(logger);
@@ -29,27 +32,19 @@ const shutdown = async () => {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-const program = new Command();
-
-program
-  .name('midnight-local-devnet')
-  .description('Manage a local Midnight development network')
-  .version('0.1.0');
-
-registerNetworkCommands(program, manager);
-registerWalletCommands(program, manager);
-registerAccountCommands(program, manager);
-
-program
-  .command('interactive')
-  .description('Start interactive menu mode')
-  .action(async () => {
-    await startInteractiveMode(manager);
-  });
-
-// No arguments = interactive mode
-if (process.argv.length <= 2) {
+if (isInteractive) {
   startInteractiveMode(manager).catch(console.error);
 } else {
+  const program = new Command();
+
+  program
+    .name('midnight-local-devnet')
+    .description('Manage a local Midnight development network')
+    .version('0.1.1');
+
+  registerNetworkCommands(program, manager);
+  registerWalletCommands(program, manager);
+  registerAccountCommands(program, manager);
+
   program.parse();
 }

@@ -12,7 +12,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 20
-      start_period: 10s
+      start_period: 60s
 
   indexer:
     container_name: 'midnight-indexer'

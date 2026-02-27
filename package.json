@@ -1,13 +1,27 @@
 {
-  "name": "midnight-local-devnet",
+  "name": "@aaronbassett/midnight-local-devnet",
   "version": "0.1.0",
-  "private": true,
+  "description": "Local Midnight development network manager — CLI and MCP server",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devrelaicom/midnight-local-devnet.git"
+  },
+  "keywords": ["midnight", "blockchain", "devnet", "mcp", "development"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/",
+    "docker/"
+  ],
   "type": "module",
   "engines": {
     "node": ">=22.0.0"
   },
   "bin": {
-    "midnight-devnet": "./dist/cli.js"
+    "midnight-local-devnet": "./dist/cli.js",
+    "midnight-devnet-mcp": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",

@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const DOCKER_COMPOSE_DIR = path.resolve(__dirname, '../../docker');
 export const DOCKER_COMPOSE_FILE = 'standalone.yml';
 
+// Dev-only genesis seed (private key = 1). Never use on a live network.
 export const GENESIS_SEED = '0000000000000000000000000000000000000000000000000000000000000001';
 export const DEFAULT_NIGHT_AMOUNT = 50_000n * 10n ** 6n; // 50,000 NIGHT in smallest unit
 export const MAX_ACCOUNTS_PER_BATCH = 10;

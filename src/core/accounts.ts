@@ -4,6 +4,7 @@ import {
   generateNewMnemonic,
   mnemonicToSeed,
   initWalletFromMnemonic,
+  waitForFunds,
   registerNightForDust,
   closeWallet,
 } from './wallet.js';
@@ -74,6 +75,7 @@ export async function generateAndFundAccounts(
       account.address = address;
 
       await fundAccount(masterWallet, address, DEFAULT_NIGHT_AMOUNT);
+      await waitForFunds(ctx.wallet);
 
       if (opts.registerDust) {
         const dustOk = await registerNightForDust(ctx);

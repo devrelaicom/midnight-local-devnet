@@ -5,8 +5,18 @@ import { registerNetworkCommands } from './cli/commands/network.js';
 import { registerWalletCommands } from './cli/commands/wallet.js';
 import { registerAccountCommands } from './cli/commands/accounts.js';
 import { startInteractiveMode } from './cli/interactive.js';
+import { createLogger } from './core/logger.js';
+import { setLogger as setWalletLogger } from './core/wallet.js';
+import { setLogger as setFundingLogger } from './core/funding.js';
+import { setLogger as setAccountsLogger } from './core/accounts.js';
 
 const manager = new NetworkManager();
+
+const logger = createLogger();
+setWalletLogger(logger);
+setFundingLogger(logger);
+setAccountsLogger(logger);
+manager.setLogger(logger);
 
 // Detect existing containers before running any command
 await manager.detectRunningNetwork();

@@ -32,7 +32,7 @@ process.on('SIGTERM', shutdown);
 const program = new Command();
 
 program
-  .name('midnight-devnet')
+  .name('midnight-local-devnet')
   .description('Manage a local Midnight development network')
   .version('0.1.0');
 

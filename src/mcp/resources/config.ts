@@ -1,7 +1,7 @@
 // src/mcp/resources/config.ts
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { NetworkManager } from '../../core/network-manager.js';
-import { defaultConfig, DOCKER_IMAGES } from '../../core/config.js';
+import { DOCKER_IMAGES } from '../../core/config.js';
 
 export function registerResources(server: McpServer, manager: NetworkManager): void {
   server.resource(
@@ -11,7 +11,7 @@ export function registerResources(server: McpServer, manager: NetworkManager): v
     async (uri) => ({
       contents: [{
         uri: uri.href,
-        text: JSON.stringify({ ...defaultConfig, images: DOCKER_IMAGES }, null, 2),
+        text: JSON.stringify({ ...manager.config, images: DOCKER_IMAGES }, null, 2),
       }],
     }),
   );

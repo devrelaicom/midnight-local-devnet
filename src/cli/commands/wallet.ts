@@ -24,7 +24,16 @@ export function registerWalletCommands(program: Command, manager: NetworkManager
     .option('--amount <n>', 'Amount in NIGHT (default: 50000)')
     .action(async (address: string, opts) => {
       const wallet = await manager.ensureWallet();
-      const amount = opts.amount ? BigInt(opts.amount) * 10n ** 6n : undefined;
+      let amount: bigint | undefined;
+      if (opts.amount) {
+        const parsed = Number(opts.amount);
+        if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsed)) {
+          console.error('Error: --amount must be a positive whole number of NIGHT tokens.');
+          process.exitCode = 1;
+          return;
+        }
+        amount = BigInt(opts.amount) * 10n ** 6n;
+      }
       const result = await fundAccount(wallet, address, amount);
       console.log(`Funded ${result.address} with ${result.amount} NIGHT (tx: ${result.txHash})`);
     });

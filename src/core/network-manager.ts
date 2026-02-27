@@ -80,6 +80,11 @@ export class NetworkManager {
       this.logger?.info('Network started and master wallet initialized');
       return 'started';
     } catch (err) {
+      try {
+        await composeDown({ removeVolumes: false });
+      } catch {
+        // best-effort cleanup
+      }
       this.status = 'stopped';
       throw err;
     }

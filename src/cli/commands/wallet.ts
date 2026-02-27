@@ -26,8 +26,7 @@ export function registerWalletCommands(program: Command, manager: NetworkManager
       const wallet = await manager.ensureWallet();
       let amount: bigint | undefined;
       if (opts.amount) {
-        const parsed = Number(opts.amount);
-        if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsed)) {
+        if (!/^[1-9]\d*$/.test(opts.amount)) {
           console.error('Error: --amount must be a positive whole number of NIGHT tokens.');
           process.exitCode = 1;
           return;

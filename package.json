@@ -1,6 +1,6 @@
 {
   "name": "@aaronbassett/midnight-local-devnet",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Local Midnight development network manager — CLI and MCP server",
   "license": "MIT",
   "repository": {

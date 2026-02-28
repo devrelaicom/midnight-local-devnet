@@ -19,7 +19,7 @@ Start the network:
 npx @aaronbassett/midnight-local-devnet start
 ```
 
-Open the realtime dashboard in a second terminal pane to monitor your devnet:
+Open the dashboard in your browser to monitor your devnet:
 
 ```bash
 npx @aaronbassett/midnight-local-devnet dashboard
@@ -58,48 +58,38 @@ All commands can be run via `npx @aaronbassett/midnight-local-devnet <command>`.
 | `fund <address>` | Fund a Bech32 address with NIGHT tokens | `--amount <n>` Amount in NIGHT (default: 50,000) |
 | `fund-file <path>` | Fund all accounts from an accounts.json file | |
 | `generate-accounts` | Generate random test accounts | `--count <n>`, `--format <mnemonic\|privateKey>`, `--output <path>`, `--fund`, `--register-dust` |
-| `dashboard` | Open realtime terminal dashboard | |
+| `dashboard` | Open browser dashboard | `--port <n>` (default: 31780), `--no-open` Suppress auto-open |
 | `interactive` | Start interactive menu mode | |
 
 Running with no arguments displays help.
 
 ## Dashboard
 
-The `dashboard` command opens a realtime terminal UI that displays the state of all local devnet services. It's designed to run in a side terminal pane while you develop.
+The `dashboard` command starts a local server and opens a browser-based dashboard that displays the state of all local devnet services in real time.
 
 ```bash
 npx @aaronbassett/midnight-local-devnet dashboard
 ```
 
+This starts a server on `http://localhost:31780` and opens your default browser. Press Ctrl+C in the terminal to stop.
+
+Options:
+
+- `--port <n>` -- Use a specific port (default: 31780, auto-increments if in use)
+- `--no-open` -- Start the server without opening the browser
+
 The dashboard shows:
 
 - **Node** -- Block height, average block time, chain, peers, sync status, version
-- **Indexer** -- Indexed block height, lag vs node, readiness
-- **Proof Server** -- Version, proof versions, job processing/pending/capacity
+- **Indexer** -- Ready status, response time
+- **Proof Server** -- Version, proof versions, job processing/pending/capacity gauge
 - **Wallet** -- Master wallet NIGHT (unshielded + shielded) and DUST balances
-- **Logs** -- Combined color-coded log stream from all services, filterable by service, level, or substring search
-- **Response Times** -- Sparkline charts of per-service response times (large terminals only)
+- **Response Times** -- SVG sparkline charts of per-service response times
+- **Logs** -- Combined color-coded log stream from all services, filterable by service, level, or text search
 
-The layout adapts to your terminal width:
+The dashboard connects to the server via WebSocket for live updates. If the connection drops, it auto-reconnects. You can start and stop the network directly from the dashboard using the action buttons.
 
-| Terminal Width | Layout |
-|---|---|
-| < 40 columns | Single column, compact |
-| 40--119 columns | Two-column grid |
-| 120+ columns | Three-column with response time graphs |
-
-Keyboard shortcuts:
-
-| Key | Action |
-|---|---|
-| Tab | Cycle focus between panels |
-| Up/Down | Scroll logs (when focused) |
-| `s` | Cycle log service filter |
-| `l` | Cycle log level filter |
-| `/` | Enter log search mode |
-| `q` | Exit dashboard |
-
-The dashboard starts regardless of whether the network is running. Panels show "Connecting..." and update live when services come up.
+The layout is responsive and adapts to your browser window width.
 
 ## MCP Tool Reference
 

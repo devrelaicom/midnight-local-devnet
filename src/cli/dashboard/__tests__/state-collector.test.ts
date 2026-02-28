@@ -163,8 +163,8 @@ describe('StateCollector', () => {
       expect(state.health.indexer.status).toBe('healthy');
       expect(state.health.proofServer.status).toBe('healthy');
 
-      // Network status defaults to 'running' when not passed
-      expect(state.networkStatus).toBe('running');
+      // Network status defaults to 'unknown' when not passed
+      expect(state.networkStatus).toBe('unknown');
     });
 
     it('handles all services being offline gracefully', async () => {
@@ -243,12 +243,12 @@ describe('StateCollector', () => {
       expect(state.networkStatus).toBe('starting');
     });
 
-    it('defaults networkStatus to "running" when not provided', async () => {
+    it('defaults networkStatus to "unknown" when not provided', async () => {
       setupAllMocksHealthy();
       const collector = new StateCollector(mockConfig);
       const state = await collector.collect();
 
-      expect(state.networkStatus).toBe('running');
+      expect(state.networkStatus).toBe('unknown');
     });
 
     it('calls all data-fetching functions with correct URLs', async () => {

@@ -22,6 +22,7 @@ export interface DashboardState {
     name: string | null;
     version: string | null;
     blockHeight: number | null;
+    /** Average block production time in milliseconds, or null if insufficient data */
     avgBlockTime: number | null;
     peers: number | null;
     syncing: boolean | null;
@@ -194,7 +195,7 @@ export class StateCollector {
       },
       containers,
       logs,
-      networkStatus: networkStatus ?? 'running',
+      networkStatus: networkStatus ?? 'unknown',
     };
   }
 }

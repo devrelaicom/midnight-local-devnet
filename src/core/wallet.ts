@@ -48,6 +48,27 @@ export function mnemonicToSeed(mnemonic: string): Buffer {
   return Buffer.from(mnemonicToSeedSync(mnemonic));
 }
 
+// ── Lightweight address derivation (no network calls) ────────────────────
+
+export function deriveAddressFromMnemonic(mnemonic: string, networkId: string): string {
+  setNetworkId(networkId);
+  const seed = mnemonicToSeed(mnemonic);
+  const hdResult = HDWallet.fromSeed(seed);
+  if (hdResult.type !== 'seedOk') {
+    throw new DevnetError('Invalid mnemonic', 'HD_WALLET_ERROR');
+  }
+  const derivation = hdResult.hdWallet
+    .selectAccount(0)
+    .selectRoles([Roles.NightExternal] as const)
+    .deriveKeysAt(0);
+  hdResult.hdWallet.clear();
+  if (derivation.type !== 'keysDerived') {
+    throw new DevnetError('Key derivation failed', 'KEY_DERIVATION_ERROR');
+  }
+  const keystore = createKeystore(derivation.keys[Roles.NightExternal], networkId as any);
+  return UnshieldedPublicKey.fromKeyStore(keystore).publicKey;
+}
+
 // ── Wallet initialization ──────────────────────────────────────────────────
 
 export async function initWalletFromSeed(

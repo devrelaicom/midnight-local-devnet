@@ -7,6 +7,11 @@ export function registerInteractiveCommand(program: Command, manager: NetworkMan
     .command('interactive')
     .description('Start interactive menu mode')
     .action(async () => {
-      await startInteractiveMode(manager);
+      try {
+        await startInteractiveMode(manager);
+      } catch (error) {
+        console.error('Interactive mode error:', error instanceof Error ? error.message : error);
+        process.exit(1);
+      }
     });
 }

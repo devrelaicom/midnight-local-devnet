@@ -72,18 +72,6 @@ function makeMockManager(overrides: Partial<NetworkManager> = {}): NetworkManage
   } as unknown as NetworkManager;
 }
 
-// Helper to create a mock WebSocket
-function createMockWs() {
-  const ws = {
-    readyState: 1, // OPEN
-    OPEN: 1,
-    send: vi.fn(),
-    close: vi.fn(),
-    on: vi.fn(),
-  };
-  return ws;
-}
-
 describe('createDashboardApp', () => {
   beforeEach(() => {
     vi.useFakeTimers();

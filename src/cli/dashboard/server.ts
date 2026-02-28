@@ -29,6 +29,7 @@ export function createDashboardApp(opts: DashboardServerOptions) {
     docker: 5000,
     health: 5000,
   };
+  const validServices = new Set(Object.keys(intervals));
   const lastFetch: Record<string, number> = {};
 
   // ---------- Wallet sync state ----------
@@ -92,8 +93,8 @@ export function createDashboardApp(opts: DashboardServerOptions) {
       } else if (action === 'stop') {
         await manager.stop({ removeVolumes: false });
       } else if (action === 'sync-wallet') {
-        handleSyncWallet();
-        sendToClient(ws, { type: 'result', action, success: true });
+        const started = handleSyncWallet();
+        sendToClient(ws, { type: 'result', action, success: true, started });
         return;
       } else if (action === 'derive-address') {
         const mnemonic = msg.mnemonic;
@@ -111,7 +112,7 @@ export function createDashboardApp(opts: DashboardServerOptions) {
         return;
       } else if (action === 'set-polling') {
         const { service, interval } = msg;
-        if (!service || typeof interval !== 'number' || interval < 1000) {
+        if (!service || !validServices.has(service) || typeof interval !== 'number' || interval < 1000) {
           sendToClient(ws, {
             type: 'result',
             action,
@@ -136,9 +137,9 @@ export function createDashboardApp(opts: DashboardServerOptions) {
   }
 
   // ---------- Wallet sync ----------
-  function handleSyncWallet(): void {
+  function handleSyncWallet(): boolean {
     // Prevent concurrent wallet sync operations
-    if (walletSyncPromise) return;
+    if (walletSyncPromise) return false;
 
     walletSyncStatus = 'syncing';
     broadcast({ type: 'wallet-sync-status', status: walletSyncStatus });
@@ -155,6 +156,8 @@ export function createDashboardApp(opts: DashboardServerOptions) {
         broadcast({ type: 'wallet-sync-status', status: walletSyncStatus });
       }
     })();
+
+    return true;
   }
 
   function sendToClient(ws: WsWebSocket, data: unknown) {
@@ -163,13 +166,16 @@ export function createDashboardApp(opts: DashboardServerOptions) {
     }
   }
 
-  function broadcast(data: unknown) {
-    const json = JSON.stringify(data);
+  function broadcastRaw(json: string) {
     for (const ws of clients) {
       if (ws.readyState === ws.OPEN) {
         ws.send(json);
       }
     }
+  }
+
+  function broadcast(data: unknown) {
+    broadcastRaw(JSON.stringify(data));
   }
 
   // ---------- Tick-based polling + broadcast ----------
@@ -224,11 +230,7 @@ export function createDashboardApp(opts: DashboardServerOptions) {
         typeof value === 'bigint' ? value.toString() : value,
       );
 
-      for (const ws of clients) {
-        if (ws.readyState === ws.OPEN) {
-          ws.send(json);
-        }
-      }
+      broadcastRaw(json);
     } catch {
       // Swallow polling errors to keep the interval running
     }

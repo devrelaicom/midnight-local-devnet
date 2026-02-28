@@ -1174,7 +1174,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
             id: crypto.randomUUID(),
             publicKey: derivedAddress,
             displayName: displayName.trim() || 'Imported Wallet',
-            mnemonic: mnemonic.trim(),
+            hasMnemonic: true,
           });
         } else {
           if (!address.trim()) return;
@@ -1185,7 +1185,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
           });
         }
         onClose();
-      }, [tab, derivedAddress, address, displayName, mnemonic, onImport, onClose]);
+      }, [tab, derivedAddress, address, displayName, onImport, onClose]);
 
       return html\`
         <div class="modal-overlay" onClick=\${(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -1239,7 +1239,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
     }
 
     // --- WalletCard ---
-    function WalletCard({ wallet, walletSyncStatus, sendMessage, deriveResult, showImportModal, setShowImportModal }) {
+    function WalletCard({ wallet, walletSyncStatus, sendMessage, onOpenImportModal, importHandlerRef }) {
       // Load wallets from localStorage, ensuring master wallet is always first
       const [wallets, setWallets] = useState(() => {
         const stored = loadWallets();
@@ -1285,6 +1285,11 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
         setSelectedId(newWallet.id);
       }, []);
 
+      // Expose import handler to parent via ref
+      useEffect(() => {
+        if (importHandlerRef) importHandlerRef.current = handleImportWallet;
+      }, [importHandlerRef, handleImportWallet]);
+
       const handleStartEdit = useCallback((w) => {
         setEditingId(w.id);
         setEditName(w.displayName);
@@ -1314,7 +1319,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
         navigator.clipboard.writeText(text).then(() => {
           setCopied(true);
           setTimeout(() => setCopied(false), 1500);
-        });
+        }).catch(() => {});
       }, []);
 
       const showBalances = isMaster && walletSyncStatus !== 'syncing';
@@ -1361,7 +1366,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
                 </button>
               \` : null}
             </div>
-            <button class="btn" onClick=\${() => setShowImportModal(true)}>
+            <button class="btn" onClick=\${onOpenImportModal}>
               \${icons.plus} Import
             </button>
           </div>
@@ -1411,21 +1416,13 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
             \` : !isMaster ? html\`
               <div class="balance-item" style="grid-column: 1 / -1; text-align: center;">
                 <div style="font-size: 13px; color: var(--mn-text-muted); padding: 8px 0;">
-                  \${selectedWallet && selectedWallet.mnemonic ? 'Derived address — balances not available' : 'Address only — balances not available'}
+                  \${selectedWallet && selectedWallet.hasMnemonic ? 'Derived address — balances not available' : 'Address only — balances not available'}
                 </div>
               </div>
             \` : null}
           </div>
         </div>
 
-        \${showImportModal ? html\`
-          <\${ImportWalletModal}
-            onClose=\${() => setShowImportModal(false)}
-            onImport=\${handleImportWallet}
-            sendMessage=\${sendMessage}
-            deriveResult=\${deriveResult}
-          />
-        \` : null}
       \`;
     }
 
@@ -1583,6 +1580,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
 
       const [deriveResult, setDeriveResult] = useState(null);
       const [showImportModal, setShowImportModal] = useState(false);
+      const importHandlerRef = useRef(null);
 
       useEffect(() => {
         function connect() {
@@ -1647,12 +1645,20 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
           <\${ProofServerCard} proofServer=\${state.proofServer} health=\${state.health.proofServer} />
         </div>
         <div class="cards-grid">
-          <\${WalletCard} wallet=\${state.wallet} walletSyncStatus=\${state.walletSyncStatus} sendMessage=\${sendMessage} deriveResult=\${deriveResult} showImportModal=\${showImportModal} setShowImportModal=\${setShowImportModal} />
+          <\${WalletCard} wallet=\${state.wallet} walletSyncStatus=\${state.walletSyncStatus} sendMessage=\${sendMessage} onOpenImportModal=\${() => { setDeriveResult(null); setShowImportModal(true); }} importHandlerRef=\${importHandlerRef} />
         </div>
         <div class="cards-grid">
           <\${ResponseChart} health=\${state.health} />
         </div>
         <\${LogViewer} logs=\${state.logs} />
+        \${showImportModal ? html\`
+          <\${ImportWalletModal}
+            onClose=\${() => setShowImportModal(false)}
+            onImport=\${(w) => importHandlerRef.current && importHandlerRef.current(w)}
+            sendMessage=\${sendMessage}
+            deriveResult=\${deriveResult}
+          />
+        \` : null}
       \`;
     }
 

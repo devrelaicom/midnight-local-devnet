@@ -554,6 +554,285 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       word-break: break-all;
     }
 
+    /* --- Modal Overlay --- */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 9, 15, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 150;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-dialog {
+      background: var(--mn-surface);
+      border: 1px solid var(--mn-border);
+      border-radius: 12px;
+      padding: 24px;
+      width: 480px;
+      max-width: 90vw;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 16px 64px rgba(9, 9, 15, 0.8);
+      animation: fadeInUp 0.2s ease-out;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--mn-text);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--mn-text-secondary);
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+
+    .modal-close:hover {
+      color: var(--mn-text);
+      background: var(--mn-surface-alt);
+    }
+
+    /* --- Import Modal Tabs --- */
+    .modal-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--mn-border);
+    }
+
+    .modal-tab {
+      flex: 1;
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--mn-text-secondary);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .modal-tab:hover {
+      color: var(--mn-text);
+    }
+
+    .modal-tab.active {
+      color: var(--mn-accent);
+      border-bottom-color: var(--mn-accent);
+    }
+
+    .modal-field {
+      margin-bottom: 14px;
+    }
+
+    .modal-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--mn-text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--mn-border);
+      background: var(--mn-surface-alt);
+      color: var(--mn-text);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .modal-input:focus {
+      border-color: var(--mn-accent);
+    }
+
+    .modal-input.mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    /* --- Wallet Selector Dropdown --- */
+    .wallet-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .wallet-select {
+      flex: 1;
+      min-width: 0;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--mn-border);
+      background: var(--mn-surface-alt);
+      color: var(--mn-text);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .wallet-select:focus {
+      border-color: var(--mn-accent);
+    }
+
+    /* --- Inline Edit Input --- */
+    .inline-edit-input {
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--mn-accent);
+      background: var(--mn-surface-alt);
+      color: var(--mn-text);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      outline: none;
+      width: 180px;
+    }
+
+    /* --- Icon Button --- */
+    .icon-btn {
+      background: none;
+      border: none;
+      color: var(--mn-text-muted);
+      cursor: pointer;
+      padding: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .icon-btn:hover {
+      color: var(--mn-text);
+      background: var(--mn-surface-alt);
+    }
+
+    .icon-btn.danger:hover {
+      color: var(--mn-error);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* --- Copy Button --- */
+    .copy-btn {
+      background: none;
+      border: none;
+      color: var(--mn-text-muted);
+      cursor: pointer;
+      padding: 4px 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 4px;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover {
+      color: var(--mn-text);
+      background: var(--mn-surface-alt);
+    }
+
+    .copy-btn.copied {
+      color: var(--mn-success);
+    }
+
+    /* --- Pulsing Sync Animation --- */
+    @keyframes syncPulse {
+      0%, 100% { box-shadow: 0 0 0 0 var(--mn-accent-glow); }
+      50% { box-shadow: 0 0 12px 4px var(--mn-accent-glow); }
+    }
+
+    .sync-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--mn-text-secondary);
+    }
+
+    .sync-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--mn-border);
+      border-top-color: var(--mn-accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .sync-glow {
+      animation: syncPulse 2s ease-in-out infinite;
+      border-radius: 12px;
+    }
+
+    /* --- Confirm Delete Inline Prompt --- */
+    .confirm-delete {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: var(--mn-surface-alt);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--mn-text-secondary);
+      animation: fadeInUp 0.15s ease-out;
+    }
+
+    .confirm-delete .btn {
+      padding: 4px 10px;
+      font-size: 11px;
+    }
+
+    /* --- Wallet Card Header Row --- */
+    .wallet-header-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .wallet-address-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     /* --- Connection Overlay --- */
     .connection-overlay {
       position: fixed;
@@ -639,7 +918,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
 
   <script type="module">
     import { h, render } from 'preact';
-    import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
+    import { useState, useEffect, useRef, useCallback, useMemo } from 'preact/hooks';
     import { html } from 'htm/preact';
 
     // --- Lucide icon SVGs (inline, stroke-based) ---
@@ -654,6 +933,11 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       activity: html\`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>\`,
       terminal: html\`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>\`,
       search: html\`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>\`,
+      copy: html\`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>\`,
+      pencil: html\`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>\`,
+      trash: html\`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>\`,
+      plus: html\`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>\`,
+      x: html\`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>\`,
     };
 
     // --- WebSocket URL (injected at generation time) ---
@@ -702,6 +986,8 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       containers: [],
       logs: [],
       networkStatus: 'unknown',
+      walletSyncStatus: 'idle',
+      serverTime: '',
     };
 
     // --- Toast component ---
@@ -842,33 +1128,304 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       \`;
     }
 
-    // --- WalletCard ---
-    function WalletCard({ wallet }) {
+    // --- localStorage helpers for wallet list ---
+    const WALLETS_KEY = 'mn-wallets';
+
+    function loadWallets() {
+      try {
+        const raw = localStorage.getItem(WALLETS_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { /* ignore */ }
+      return [];
+    }
+
+    function saveWallets(wallets) {
+      localStorage.setItem(WALLETS_KEY, JSON.stringify(wallets));
+    }
+
+    // --- ImportWalletModal ---
+    function ImportWalletModal({ onClose, onImport, sendMessage, deriveResult }) {
+      const [tab, setTab] = useState('mnemonic');
+      const [mnemonic, setMnemonic] = useState('');
+      const [address, setAddress] = useState('');
+      const [displayName, setDisplayName] = useState('');
+      const [deriving, setDeriving] = useState(false);
+      const [derivedAddress, setDerivedAddress] = useState(null);
+
+      // Watch for derive-result coming in
+      useEffect(() => {
+        if (deriveResult && deriving) {
+          setDerivedAddress(deriveResult);
+          setDeriving(false);
+        }
+      }, [deriveResult, deriving]);
+
+      const handleDerive = useCallback(() => {
+        if (!mnemonic.trim()) return;
+        setDeriving(true);
+        setDerivedAddress(null);
+        sendMessage({ type: 'command', action: 'derive-address', mnemonic: mnemonic.trim() });
+      }, [mnemonic, sendMessage]);
+
+      const handleImport = useCallback(() => {
+        if (tab === 'mnemonic') {
+          if (!derivedAddress) return;
+          onImport({
+            id: crypto.randomUUID(),
+            publicKey: derivedAddress,
+            displayName: displayName.trim() || 'Imported Wallet',
+            mnemonic: mnemonic.trim(),
+          });
+        } else {
+          if (!address.trim()) return;
+          onImport({
+            id: crypto.randomUUID(),
+            publicKey: address.trim(),
+            displayName: displayName.trim() || 'Imported Wallet',
+          });
+        }
+        onClose();
+      }, [tab, derivedAddress, address, displayName, mnemonic, onImport, onClose]);
+
       return html\`
-        <div class="card full-width fade-in" style="animation-delay: 450ms">
+        <div class="modal-overlay" onClick=\${(e) => { if (e.target === e.currentTarget) onClose(); }}>
+          <div class="modal-dialog">
+            <div class="modal-header">
+              <span class="modal-title">Import Wallet</span>
+              <button class="modal-close" onClick=\${onClose}>\${icons.x}</button>
+            </div>
+            <div class="modal-tabs">
+              <button class="modal-tab \${tab === 'mnemonic' ? 'active' : ''}" onClick=\${() => { setTab('mnemonic'); setDerivedAddress(null); }}>Mnemonic</button>
+              <button class="modal-tab \${tab === 'address' ? 'active' : ''}" onClick=\${() => setTab('address')}>Address</button>
+            </div>
+            \${tab === 'mnemonic' ? html\`
+              <div class="modal-field">
+                <label class="modal-label">Mnemonic Phrase</label>
+                <input class="modal-input mono" type="text" placeholder="Enter mnemonic words..."
+                       value=\${mnemonic} onInput=\${e => setMnemonic(e.target.value)} />
+              </div>
+              <div style="margin-bottom: 14px">
+                <button class="btn" onClick=\${handleDerive} disabled=\${deriving || !mnemonic.trim()}>
+                  \${deriving ? 'Deriving...' : 'Derive Address'}
+                </button>
+                \${derivedAddress ? html\`
+                  <div style="margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--mn-success); word-break: break-all;">
+                    Derived: \${truncateAddress(derivedAddress)}
+                  </div>
+                \` : null}
+              </div>
+            \` : html\`
+              <div class="modal-field">
+                <label class="modal-label">Public Key / Address</label>
+                <input class="modal-input mono" type="text" placeholder="Paste public key..."
+                       value=\${address} onInput=\${e => setAddress(e.target.value)} />
+              </div>
+            \`}
+            <div class="modal-field">
+              <label class="modal-label">Display Name (optional)</label>
+              <input class="modal-input" type="text" placeholder="e.g. My Wallet"
+                     value=\${displayName} onInput=\${e => setDisplayName(e.target.value)} />
+            </div>
+            <div class="modal-actions">
+              <button class="btn" onClick=\${onClose}>Cancel</button>
+              <button class="btn btn-primary" onClick=\${handleImport}
+                      disabled=\${tab === 'mnemonic' ? !derivedAddress : !address.trim()}>
+                Import
+              </button>
+            </div>
+          </div>
+        </div>
+      \`;
+    }
+
+    // --- WalletCard ---
+    function WalletCard({ wallet, walletSyncStatus, sendMessage, deriveResult, showImportModal, setShowImportModal }) {
+      // Load wallets from localStorage, ensuring master wallet is always first
+      const [wallets, setWallets] = useState(() => {
+        const stored = loadWallets();
+        const hasMaster = stored.some(w => w.id === 'master');
+        if (!hasMaster) {
+          const masterEntry = { id: 'master', publicKey: wallet.address || '', displayName: 'Master Wallet' };
+          const all = [masterEntry, ...stored];
+          saveWallets(all);
+          return all;
+        }
+        return stored;
+      });
+
+      const [selectedId, setSelectedId] = useState('master');
+      const [editingId, setEditingId] = useState(null);
+      const [editName, setEditName] = useState('');
+      const [deletingId, setDeletingId] = useState(null);
+      const [copied, setCopied] = useState(false);
+
+      // Keep master wallet address in sync with server state
+      useEffect(() => {
+        if (wallet.address) {
+          setWallets(prev => {
+            const updated = prev.map(w => w.id === 'master' ? { ...w, publicKey: wallet.address } : w);
+            saveWallets(updated);
+            return updated;
+          });
+        }
+      }, [wallet.address]);
+
+      const selectedWallet = useMemo(() => {
+        return wallets.find(w => w.id === selectedId) || wallets[0] || null;
+      }, [wallets, selectedId]);
+
+      const isMaster = selectedWallet && selectedWallet.id === 'master';
+
+      const handleImportWallet = useCallback((newWallet) => {
+        setWallets(prev => {
+          const updated = [...prev, newWallet];
+          saveWallets(updated);
+          return updated;
+        });
+        setSelectedId(newWallet.id);
+      }, []);
+
+      const handleStartEdit = useCallback((w) => {
+        setEditingId(w.id);
+        setEditName(w.displayName);
+      }, []);
+
+      const handleSaveEdit = useCallback(() => {
+        if (!editingId) return;
+        setWallets(prev => {
+          const updated = prev.map(w => w.id === editingId ? { ...w, displayName: editName.trim() || w.displayName } : w);
+          saveWallets(updated);
+          return updated;
+        });
+        setEditingId(null);
+      }, [editingId, editName]);
+
+      const handleDelete = useCallback((id) => {
+        setWallets(prev => {
+          const updated = prev.filter(w => w.id !== id);
+          saveWallets(updated);
+          return updated;
+        });
+        setDeletingId(null);
+        if (selectedId === id) setSelectedId('master');
+      }, [selectedId]);
+
+      const handleCopy = useCallback((text) => {
+        navigator.clipboard.writeText(text).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        });
+      }, []);
+
+      const showBalances = isMaster && walletSyncStatus !== 'syncing';
+      const displayAddress = selectedWallet ? selectedWallet.publicKey : null;
+
+      return html\`
+        <div class="card full-width fade-in \${walletSyncStatus === 'syncing' ? 'sync-glow' : ''}" style="animation-delay: 450ms">
           <div class="card-header">
             <div class="card-title">
               \${icons.wallet}
               Wallet
+              \${walletSyncStatus === 'syncing' ? html\`
+                <span class="sync-indicator">
+                  <span class="sync-spinner"></span>
+                  Syncing...
+                </span>
+              \` : null}
             </div>
             <span class="card-health-dot \${wallet.connected ? 'healthy' : 'unhealthy'}"></span>
           </div>
+
+          <div class="wallet-header-row">
+            <div class="wallet-selector">
+              \${editingId === (selectedWallet && selectedWallet.id) ? html\`
+                <input class="inline-edit-input" type="text" value=\${editName}
+                       onInput=\${e => setEditName(e.target.value)}
+                       onBlur=\${handleSaveEdit}
+                       onKeyDown=\${e => { if (e.key === 'Enter') handleSaveEdit(); if (e.key === 'Escape') setEditingId(null); }}
+                       autofocus />
+              \` : html\`
+                <select class="wallet-select" value=\${selectedId}
+                        onChange=\${e => { setSelectedId(e.target.value); setDeletingId(null); }}>
+                  \${wallets.map(w => html\`
+                    <option key=\${w.id} value=\${w.id}>\${w.displayName}</option>
+                  \`)}
+                </select>
+              \`}
+              <button class="icon-btn" title="Rename wallet" onClick=\${() => selectedWallet && handleStartEdit(selectedWallet)}>
+                \${icons.pencil}
+              </button>
+              \${selectedWallet && selectedWallet.id !== 'master' ? html\`
+                <button class="icon-btn danger" title="Delete wallet" onClick=\${() => setDeletingId(selectedWallet.id)}>
+                  \${icons.trash}
+                </button>
+              \` : null}
+            </div>
+            <button class="btn" onClick=\${() => setShowImportModal(true)}>
+              \${icons.plus} Import
+            </button>
+          </div>
+
+          \${deletingId ? html\`
+            <div class="confirm-delete">
+              <span>Delete this wallet?</span>
+              <button class="btn btn-danger" onClick=\${() => handleDelete(deletingId)}>Yes, delete</button>
+              <button class="btn" onClick=\${() => setDeletingId(null)}>Cancel</button>
+            </div>
+          \` : null}
+
           <div class="wallet-grid">
-            <div class="wallet-address" title=\${wallet.address || ''}>\${wallet.address ? truncateAddress(wallet.address) : 'No wallet connected'}</div>
-            <div class="balance-item">
-              <div class="balance-value">\${formatBalance(wallet.unshielded)}</div>
-              <div class="balance-label">NIGHT (Unshielded)</div>
+            <div class="wallet-address">
+              <div class="wallet-address-row">
+                <span class="mono" title=\${displayAddress || ''} style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                  \${displayAddress ? truncateAddress(displayAddress) : 'No wallet connected'}
+                </span>
+                \${displayAddress ? html\`
+                  <button class="copy-btn \${copied ? 'copied' : ''}" onClick=\${() => handleCopy(displayAddress)}>
+                    \${icons.copy}
+                    \${copied ? 'Copied!' : 'Copy'}
+                  </button>
+                \` : null}
+              </div>
             </div>
-            <div class="balance-item">
-              <div class="balance-value">\${formatBalance(wallet.shielded)}</div>
-              <div class="balance-label">NIGHT (Shielded)</div>
-            </div>
-            <div class="balance-item">
-              <div class="balance-value">\${formatBalance(wallet.dust)}</div>
-              <div class="balance-label">DUST</div>
-            </div>
+            \${showBalances ? html\`
+              <div class="balance-item">
+                <div class="balance-value">\${formatBalance(wallet.unshielded)}</div>
+                <div class="balance-label">NIGHT (Unshielded)</div>
+              </div>
+              <div class="balance-item">
+                <div class="balance-value">\${formatBalance(wallet.shielded)}</div>
+                <div class="balance-label">NIGHT (Shielded)</div>
+              </div>
+              <div class="balance-item">
+                <div class="balance-value">\${formatBalance(wallet.dust)}</div>
+                <div class="balance-label">DUST</div>
+              </div>
+            \` : isMaster && walletSyncStatus === 'syncing' ? html\`
+              <div class="balance-item" style="grid-column: 1 / -1; text-align: center;">
+                <div class="sync-indicator" style="justify-content: center;">
+                  <span class="sync-spinner"></span>
+                  Syncing balances...
+                </div>
+              </div>
+            \` : !isMaster ? html\`
+              <div class="balance-item" style="grid-column: 1 / -1; text-align: center;">
+                <div style="font-size: 13px; color: var(--mn-text-muted); padding: 8px 0;">
+                  \${selectedWallet && selectedWallet.mnemonic ? 'Derived address — balances not available' : 'Address only — balances not available'}
+                </div>
+              </div>
+            \` : null}
           </div>
         </div>
+
+        \${showImportModal ? html\`
+          <\${ImportWalletModal}
+            onClose=\${() => setShowImportModal(false)}
+            onImport=\${handleImportWallet}
+            sendMessage=\${sendMessage}
+            deriveResult=\${deriveResult}
+          />
+        \` : null}
       \`;
     }
 
@@ -1018,6 +1575,15 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
         }
       }, []);
 
+      const sendMessage = useCallback((msg) => {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify(msg));
+        }
+      }, []);
+
+      const [deriveResult, setDeriveResult] = useState(null);
+      const [showImportModal, setShowImportModal] = useState(false);
+
       useEffect(() => {
         function connect() {
           const ws = new WebSocket(WS_URL);
@@ -1026,6 +1592,8 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
           ws.addEventListener('open', () => {
             setConnected(true);
             backoff.current = 1000;
+            // Auto-sync wallet on first connect
+            ws.send(JSON.stringify({ type: 'command', action: 'sync-wallet' }));
           });
 
           ws.addEventListener('message', (event) => {
@@ -1035,6 +1603,8 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
                 setState(msg.data);
               } else if (msg.type === 'result') {
                 addToast(msg.message || (msg.success ? 'Command succeeded' : 'Command failed'), msg.success ? 'success' : 'error');
+              } else if (msg.type === 'derive-result') {
+                setDeriveResult(msg.address || null);
               }
             } catch (e) {
               // ignore malformed messages
@@ -1077,7 +1647,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
           <\${ProofServerCard} proofServer=\${state.proofServer} health=\${state.health.proofServer} />
         </div>
         <div class="cards-grid">
-          <\${WalletCard} wallet=\${state.wallet} />
+          <\${WalletCard} wallet=\${state.wallet} walletSyncStatus=\${state.walletSyncStatus} sendMessage=\${sendMessage} deriveResult=\${deriveResult} showImportModal=\${showImportModal} setShowImportModal=\${setShowImportModal} />
         </div>
         <div class="cards-grid">
           <\${ResponseChart} health=\${state.health} />

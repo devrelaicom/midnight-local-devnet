@@ -35,7 +35,7 @@ const program = new Command();
 program
   .name('midnight-local-devnet')
   .description('Manage a local Midnight development network')
-  .version('0.1.2');
+  .version('0.2.1');
 
 registerNetworkCommands(program, manager);
 registerWalletCommands(program, manager);

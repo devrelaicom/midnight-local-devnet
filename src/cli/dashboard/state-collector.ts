@@ -154,7 +154,9 @@ export class StateCollector {
       fetchNode ? safeCall(() => fetchSystemVersion(this.config.node), null) : Promise.resolve(null),
       fetchNode ? safeCall(() => fetchSystemHealth(this.config.node), null) : Promise.resolve(null),
       fetchNode ? safeCall(() => fetchBestBlockHeader(this.config.node), null) : Promise.resolve(null),
-      fetchProofServer ? safeCall(() => fetchProofServerVersion(this.config.proofServer), null) : Promise.resolve(null),
+      // Version info changes rarely — fetch alongside proof versions (10 min interval)
+      fetchProofVer ? safeCall(() => fetchProofServerVersion(this.config.proofServer), null) : Promise.resolve(null),
+      // Ready/jobs status needs frequent polling (5s interval)
       fetchProofServer ? safeCall(() => fetchProofServerReady(this.config.proofServer), null) : Promise.resolve(null),
       fetchProofVer ? safeCall(() => fetchProofVersions(this.config.proofServer), null) : Promise.resolve(null),
       fetchDocker ? safeCall(() => composePs(), []) : Promise.resolve(null),
@@ -204,18 +206,23 @@ export class StateCollector {
     }
 
     // --- Proof server section ---
+    // /ready is polled frequently (proofServer flag, 5s default)
     if (fetchProofServer) {
       this.cachedProofServer = {
-        version: proofVersion,
+        ...this.cachedProofServer,
         ready: proofReady?.status === 'ok',
         jobsProcessing: proofReady?.jobsProcessing ?? null,
         jobsPending: proofReady?.jobsPending ?? null,
         jobCapacity: proofReady?.jobCapacity ?? null,
-        proofVersions: fetchProofVer ? proofVersions : this.cachedProofServer.proofVersions,
       };
-    } else if (fetchProofVer) {
-      // Only proofVersions fetched, merge into cached
-      this.cachedProofServer = { ...this.cachedProofServer, proofVersions };
+    }
+    // /version and /proof-versions are fetched infrequently (proofVersions flag, 10 min default)
+    if (fetchProofVer) {
+      this.cachedProofServer = {
+        ...this.cachedProofServer,
+        version: proofVersion,
+        proofVersions,
+      };
     }
 
     // --- Health section ---

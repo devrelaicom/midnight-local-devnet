@@ -127,7 +127,6 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       border: 1px solid var(--mn-border);
       border-radius: 12px;
       position: relative;
-      overflow: hidden;
     }
 
     .header::before {
@@ -139,6 +138,8 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       height: 300px;
       background: radial-gradient(circle, rgba(59, 59, 255, 0.12) 0%, transparent 70%);
       pointer-events: none;
+      border-radius: inherit;
+      clip-path: inset(0 0 0 0 round 12px);
     }
 
     .header-left {
@@ -682,6 +683,95 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       margin-top: 20px;
     }
 
+    .modal-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--mn-bg);
+      border: 1px solid var(--mn-border);
+      border-radius: 8px;
+      color: var(--mn-text);
+      font-size: 13px;
+      resize: vertical;
+      min-height: 60px;
+      box-sizing: border-box;
+    }
+
+    .modal-textarea:focus {
+      outline: none;
+      border-color: var(--mn-accent);
+    }
+
+    .mnemonic-display {
+      padding: 14px;
+      background: var(--mn-bg);
+      border: 1px solid var(--mn-border);
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--mn-text);
+      word-spacing: 6px;
+      user-select: all;
+    }
+
+    .mnemonic-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px 12px;
+      background: rgba(234, 179, 8, 0.08);
+      border: 1px solid rgba(234, 179, 8, 0.25);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--mn-warning);
+      margin-bottom: 14px;
+    }
+
+    .file-drop-zone {
+      position: relative;
+      border: 2px dashed var(--mn-border);
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .file-drop-zone:hover {
+      border-color: var(--mn-accent);
+      background: rgba(59, 59, 255, 0.04);
+    }
+
+    .file-drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .file-preview-table {
+      width: 100%;
+      font-size: 12px;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .file-preview-table th,
+    .file-preview-table td {
+      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--mn-border);
+    }
+
+    .file-preview-table th {
+      color: var(--mn-text-muted);
+      font-weight: 500;
+    }
+
+    .file-preview-table td.mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
     /* --- Wallet Selector Dropdown --- */
     .wallet-selector {
       display: flex;
@@ -1031,6 +1121,9 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       plus: html\`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>\`,
       x: html\`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>\`,
       settings: html\`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>\`,
+      refresh: html\`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>\`,
+      upload: html\`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>\`,
+      key: html\`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.3 9.3"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>\`,
     };
 
     // --- WebSocket URL (injected at generation time) ---
@@ -1353,13 +1446,19 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
     }
 
     // --- ImportWalletModal ---
-    function ImportWalletModal({ onClose, onImport, sendMessage, deriveResult }) {
+    function ImportWalletModal({ onClose, onImport, sendMessage, deriveResult, deriveAccountsResult }) {
       const [tab, setTab] = useState('mnemonic');
       const [mnemonic, setMnemonic] = useState('');
       const [address, setAddress] = useState('');
       const [displayName, setDisplayName] = useState('');
       const [deriving, setDeriving] = useState(false);
       const [derivedAddress, setDerivedAddress] = useState(null);
+
+      // File import state
+      const [fileAccounts, setFileAccounts] = useState(null);
+      const [fileError, setFileError] = useState(null);
+      const [derivingFile, setDerivingFile] = useState(false);
+      const [fileResults, setFileResults] = useState(null);
 
       // Watch for derive-result coming in
       useEffect(() => {
@@ -1369,12 +1468,70 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
         }
       }, [deriveResult, deriving]);
 
+      // Watch for derive-accounts-result
+      useEffect(() => {
+        if (deriveAccountsResult && derivingFile) {
+          setFileResults(deriveAccountsResult);
+          setDerivingFile(false);
+        }
+      }, [deriveAccountsResult, derivingFile]);
+
       const handleDerive = useCallback(() => {
         if (!mnemonic.trim()) return;
         setDeriving(true);
         setDerivedAddress(null);
         sendMessage({ type: 'command', action: 'derive-address', mnemonic: mnemonic.trim() });
       }, [mnemonic, sendMessage]);
+
+      const handleFileSelect = useCallback((e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setFileError(null);
+        setFileResults(null);
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            if (!data.accounts || !Array.isArray(data.accounts)) {
+              setFileError('Invalid format: expected { "accounts": [...] }');
+              return;
+            }
+            const withMnemonic = data.accounts.filter(a => a.mnemonic);
+            if (withMnemonic.length === 0) {
+              setFileError('No accounts with mnemonic phrases found');
+              return;
+            }
+            setFileAccounts(withMnemonic);
+          } catch (err) {
+            setFileError('Failed to parse JSON: ' + err.message);
+          }
+        };
+        reader.readAsText(file);
+      }, []);
+
+      const handleDeriveFile = useCallback(() => {
+        if (!fileAccounts) return;
+        setDerivingFile(true);
+        setFileResults(null);
+        sendMessage({
+          type: 'command',
+          action: 'derive-accounts',
+          accounts: fileAccounts.map(a => ({ name: a.name, mnemonic: a.mnemonic })),
+        });
+      }, [fileAccounts, sendMessage]);
+
+      const handleImportFile = useCallback(() => {
+        if (!fileResults) return;
+        for (const account of fileResults) {
+          onImport({
+            id: crypto.randomUUID(),
+            publicKey: account.address,
+            displayName: account.name || 'Imported Wallet',
+            hasMnemonic: true,
+          });
+        }
+        onClose();
+      }, [fileResults, onImport, onClose]);
 
       const handleImport = useCallback(() => {
         if (tab === 'mnemonic') {
@@ -1404,10 +1561,73 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
               <button class="modal-close" onClick=\${onClose}>\${icons.x}</button>
             </div>
             <div class="modal-tabs">
+              <button class="modal-tab \${tab === 'file' ? 'active' : ''}" onClick=\${() => setTab('file')}>File</button>
               <button class="modal-tab \${tab === 'mnemonic' ? 'active' : ''}" onClick=\${() => { setTab('mnemonic'); setDerivedAddress(null); }}>Mnemonic</button>
               <button class="modal-tab \${tab === 'address' ? 'active' : ''}" onClick=\${() => setTab('address')}>Address</button>
             </div>
-            \${tab === 'mnemonic' ? html\`
+            \${tab === 'file' ? html\`
+              <div class="modal-field">
+                <label class="modal-label">accounts.json File</label>
+                <div class="file-drop-zone">
+                  <input type="file" accept=".json,application/json" onChange=\${handleFileSelect} />
+                  <div style="color: var(--mn-text-muted); font-size: 13px;">
+                    \${icons.upload} Click to select accounts.json
+                  </div>
+                </div>
+              </div>
+              \${fileError ? html\`
+                <div style="color: var(--mn-error); font-size: 12px; margin-bottom: 10px;">\${fileError}</div>
+              \` : null}
+              \${fileAccounts && !fileResults ? html\`
+                <div style="margin-bottom: 14px;">
+                  <div style="font-size: 12px; color: var(--mn-text-muted); margin-bottom: 8px;">
+                    Found \${fileAccounts.length} account\${fileAccounts.length !== 1 ? 's' : ''} with mnemonics
+                  </div>
+                  <table class="file-preview-table">
+                    <thead><tr><th>Name</th><th>Mnemonic</th></tr></thead>
+                    <tbody>
+                      \${fileAccounts.map(a => html\`
+                        <tr>
+                          <td>\${a.name}</td>
+                          <td class="mono" style="color: var(--mn-text-muted);">\${a.mnemonic.split(' ').slice(0, 3).join(' ')}...</td>
+                        </tr>
+                      \`)}
+                    </tbody>
+                  </table>
+                  <div style="margin-top: 12px;">
+                    <button class="btn btn-primary" onClick=\${handleDeriveFile} disabled=\${derivingFile}>
+                      \${derivingFile ? html\`<span class="btn-spinner"></span> Deriving...
+                      \` : 'Derive Addresses'}
+                    </button>
+                  </div>
+                </div>
+              \` : null}
+              \${fileResults ? html\`
+                <div style="margin-bottom: 14px;">
+                  <div style="font-size: 12px; color: var(--mn-success); margin-bottom: 8px;">
+                    Derived \${fileResults.length} address\${fileResults.length !== 1 ? 'es' : ''}
+                  </div>
+                  <table class="file-preview-table">
+                    <thead><tr><th>Name</th><th>Address</th></tr></thead>
+                    <tbody>
+                      \${fileResults.map(a => html\`
+                        <tr>
+                          <td>\${a.name}</td>
+                          <td class="mono">\${truncateAddress(a.address)}</td>
+                        </tr>
+                      \`)}
+                    </tbody>
+                  </table>
+                </div>
+              \` : null}
+              <div class="modal-actions">
+                <button class="btn" onClick=\${onClose}>Cancel</button>
+                <button class="btn btn-primary" onClick=\${handleImportFile}
+                        disabled=\${!fileResults}>
+                  Import \${fileResults ? fileResults.length : ''} Wallet\${fileResults && fileResults.length !== 1 ? 's' : ''}
+                </button>
+              </div>
+            \` : tab === 'mnemonic' ? html\`
               <div class="modal-field">
                 <label class="modal-label">Mnemonic Phrase</label>
                 <input class="modal-input mono" type="text" placeholder="Enter mnemonic words..."
@@ -1423,32 +1643,130 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
                   </div>
                 \` : null}
               </div>
+              <div class="modal-field">
+                <label class="modal-label">Display Name (optional)</label>
+                <input class="modal-input" type="text" placeholder="e.g. My Wallet"
+                       value=\${displayName} onInput=\${e => setDisplayName(e.target.value)} />
+              </div>
+              <div class="modal-actions">
+                <button class="btn" onClick=\${onClose}>Cancel</button>
+                <button class="btn btn-primary" onClick=\${handleImport}
+                        disabled=\${!derivedAddress}>
+                  Import
+                </button>
+              </div>
             \` : html\`
               <div class="modal-field">
                 <label class="modal-label">Public Key / Address</label>
                 <input class="modal-input mono" type="text" placeholder="Paste public key..."
                        value=\${address} onInput=\${e => setAddress(e.target.value)} />
               </div>
+              <div class="modal-field">
+                <label class="modal-label">Display Name (optional)</label>
+                <input class="modal-input" type="text" placeholder="e.g. My Wallet"
+                       value=\${displayName} onInput=\${e => setDisplayName(e.target.value)} />
+              </div>
+              <div class="modal-actions">
+                <button class="btn" onClick=\${onClose}>Cancel</button>
+                <button class="btn btn-primary" onClick=\${handleImport}
+                        disabled=\${!address.trim()}>
+                  Import
+                </button>
+              </div>
             \`}
-            <div class="modal-field">
-              <label class="modal-label">Display Name (optional)</label>
-              <input class="modal-input" type="text" placeholder="e.g. My Wallet"
-                     value=\${displayName} onInput=\${e => setDisplayName(e.target.value)} />
+          </div>
+        </div>
+      \`;
+    }
+
+    // --- GenerateWalletModal ---
+    function GenerateWalletModal({ onClose, onImport, sendMessage, generateResult }) {
+      const [generating, setGenerating] = useState(false);
+      const [result, setResult] = useState(null);
+      const [copied, setCopied] = useState(false);
+
+      useEffect(() => {
+        if (generateResult && generating) {
+          setResult(generateResult);
+          setGenerating(false);
+        }
+      }, [generateResult, generating]);
+
+      const handleGenerate = useCallback(() => {
+        setGenerating(true);
+        setResult(null);
+        setCopied(false);
+        sendMessage({ type: 'command', action: 'generate-wallet' });
+      }, [sendMessage]);
+
+      // Generate on mount
+      useEffect(() => { handleGenerate(); }, []);
+
+      const handleCopy = useCallback(() => {
+        if (!result) return;
+        navigator.clipboard.writeText(result.mnemonic).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }).catch(() => {});
+      }, [result]);
+
+      const handleAdd = useCallback(() => {
+        if (!result) return;
+        onImport({
+          id: crypto.randomUUID(),
+          publicKey: result.address,
+          displayName: 'Generated Wallet',
+          hasMnemonic: true,
+        });
+        onClose();
+      }, [result, onImport, onClose]);
+
+      return html\`
+        <div class="modal-overlay" onClick=\${(e) => { if (e.target === e.currentTarget) onClose(); }}>
+          <div class="modal-dialog">
+            <div class="modal-header">
+              <span class="modal-title">Generate Wallet</span>
+              <button class="modal-close" onClick=\${onClose}>\${icons.x}</button>
             </div>
-            <div class="modal-actions">
-              <button class="btn" onClick=\${onClose}>Cancel</button>
-              <button class="btn btn-primary" onClick=\${handleImport}
-                      disabled=\${tab === 'mnemonic' ? !derivedAddress : !address.trim()}>
-                Import
-              </button>
-            </div>
+            \${generating ? html\`
+              <div style="text-align: center; padding: 24px 0;">
+                <span class="btn-spinner" style="width: 20px; height: 20px;"></span>
+                <div style="margin-top: 10px; color: var(--mn-text-muted); font-size: 13px;">Generating wallet...</div>
+              </div>
+            \` : result ? html\`
+              <div class="mnemonic-warning">
+                <span style="font-size: 16px; flex-shrink: 0;">!</span>
+                <span>Save this mnemonic phrase securely. It will not be shown again and cannot be recovered.</span>
+              </div>
+              <div class="modal-field">
+                <label class="modal-label">Mnemonic Phrase</label>
+                <div class="mnemonic-display">\${result.mnemonic}</div>
+              </div>
+              <div class="modal-field">
+                <label class="modal-label">Derived Address</label>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--mn-success); word-break: break-all;">
+                  \${result.address}
+                </div>
+              </div>
+              <div class="modal-actions" style="justify-content: space-between;">
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn" onClick=\${handleCopy}>
+                    \${icons.copy} \${copied ? 'Copied!' : 'Copy Mnemonic'}
+                  </button>
+                  <button class="btn" onClick=\${handleGenerate}>
+                    \${icons.refresh} New
+                  </button>
+                </div>
+                <button class="btn btn-primary" onClick=\${handleAdd}>Add to Wallets</button>
+              </div>
+            \` : null}
           </div>
         </div>
       \`;
     }
 
     // --- WalletCard ---
-    function WalletCard({ wallet, walletSyncStatus, sendMessage, onOpenImportModal, importHandlerRef }) {
+    function WalletCard({ wallet, walletSyncStatus, sendMessage, onOpenImportModal, onOpenGenerateModal, importHandlerRef }) {
       // Load wallets from localStorage, ensuring master wallet is always first
       const [wallets, setWallets] = useState(() => {
         const stored = loadWallets();
@@ -1575,9 +1893,18 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
                 </button>
               \` : null}
             </div>
-            <button class="btn" onClick=\${onOpenImportModal}>
-              \${icons.plus} Import
-            </button>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn" onClick=\${() => sendMessage({ type: 'command', action: 'sync-wallet' })}
+                      disabled=\${walletSyncStatus === 'syncing'} title="Sync wallet balances">
+                \${icons.refresh} Sync
+              </button>
+              <button class="btn" onClick=\${onOpenGenerateModal} title="Generate new wallet">
+                \${icons.key} Generate
+              </button>
+              <button class="btn" onClick=\${onOpenImportModal} title="Import wallet">
+                \${icons.plus} Import
+              </button>
+            </div>
           </div>
 
           \${deletingId ? html\`
@@ -1788,7 +2115,10 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       }, []);
 
       const [deriveResult, setDeriveResult] = useState(null);
+      const [deriveAccountsResult, setDeriveAccountsResult] = useState(null);
+      const [generateResult, setGenerateResult] = useState(null);
       const [showImportModal, setShowImportModal] = useState(false);
+      const [showGenerateModal, setShowGenerateModal] = useState(false);
       const importHandlerRef = useRef(null);
 
       useEffect(() => {
@@ -1812,6 +2142,10 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
                 addToast(msg.message || (msg.success ? 'Command succeeded' : 'Command failed'), msg.success ? 'success' : 'error');
               } else if (msg.type === 'derive-result') {
                 setDeriveResult(msg.address || null);
+              } else if (msg.type === 'derive-accounts-result') {
+                setDeriveAccountsResult(msg.accounts || null);
+              } else if (msg.type === 'generate-result') {
+                setGenerateResult(msg);
               }
             } catch (e) {
               // ignore malformed messages
@@ -1854,7 +2188,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
           <\${ProofServerCard} proofServer=\${state.proofServer} health=\${state.health.proofServer} serverTime=\${state.serverTime} />
         </div>
         <div class="cards-grid">
-          <\${WalletCard} wallet=\${state.wallet} walletSyncStatus=\${state.walletSyncStatus} sendMessage=\${sendMessage} onOpenImportModal=\${() => { setDeriveResult(null); setShowImportModal(true); }} importHandlerRef=\${importHandlerRef} />
+          <\${WalletCard} wallet=\${state.wallet} walletSyncStatus=\${state.walletSyncStatus} sendMessage=\${sendMessage} onOpenImportModal=\${() => { setDeriveResult(null); setDeriveAccountsResult(null); setShowImportModal(true); }} onOpenGenerateModal=\${() => { setGenerateResult(null); setShowGenerateModal(true); }} importHandlerRef=\${importHandlerRef} />
         </div>
         <div class="cards-grid">
           <\${ResponseChart} health=\${state.health} />
@@ -1866,6 +2200,15 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
             onImport=\${(w) => importHandlerRef.current && importHandlerRef.current(w)}
             sendMessage=\${sendMessage}
             deriveResult=\${deriveResult}
+            deriveAccountsResult=\${deriveAccountsResult}
+          />
+        \` : null}
+        \${showGenerateModal ? html\`
+          <\${GenerateWalletModal}
+            onClose=\${() => setShowGenerateModal(false)}
+            onImport=\${(w) => importHandlerRef.current && importHandlerRef.current(w)}
+            sendMessage=\${sendMessage}
+            generateResult=\${generateResult}
           />
         \` : null}
       \`;

@@ -49,9 +49,11 @@ export async function fetchProofServerReady(baseUrl: string): Promise<ProofServe
 }
 
 export async function fetchProofVersions(baseUrl: string): Promise<string[] | null> {
-  const text = await fetchText(`${baseUrl}/proof-versions`);
-  if (!text) return null;
   try {
+    const response = await fetch(`${baseUrl}/proof-versions`, { signal: AbortSignal.timeout(5000) });
+    // Accept any response that has a body (server may return non-200)
+    const text = await response.text();
+    if (!text) return null;
     return JSON.parse(text) as string[];
   } catch {
     return null;

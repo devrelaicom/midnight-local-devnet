@@ -711,14 +711,16 @@ describe('StateCollector', () => {
       const polling: PollingConfig = { proofServer: false };
       const state = await collector.collect({ polling });
 
-      expect(fetchProofServerVersion).not.toHaveBeenCalled();
+      // /ready is controlled by proofServer flag
       expect(fetchProofServerReady).not.toHaveBeenCalled();
+
+      // /version is controlled by proofVersions flag, so still fetched
+      expect(fetchProofServerVersion).toHaveBeenCalled();
 
       // Node still fetched
       expect(fetchSystemChain).toHaveBeenCalled();
 
-      // Proof server returns cached defaults
-      expect(state.proofServer.version).toBeNull();
+      // Ready/jobs return cached defaults
       expect(state.proofServer.ready).toBe(false);
     });
 
@@ -728,13 +730,15 @@ describe('StateCollector', () => {
       const polling: PollingConfig = { proofVersions: false };
       const state = await collector.collect({ polling });
 
+      // /version and /proof-versions are both controlled by proofVersions flag
       expect(fetchProofVersions).not.toHaveBeenCalled();
+      expect(fetchProofServerVersion).not.toHaveBeenCalled();
 
-      // Other proof server fetches still happen
-      expect(fetchProofServerVersion).toHaveBeenCalled();
+      // /ready still fetched (controlled by proofServer flag)
       expect(fetchProofServerReady).toHaveBeenCalled();
 
-      // proofVersions falls back to cached default (null)
+      // Version info falls back to cached defaults (null)
+      expect(state.proofServer.version).toBeNull();
       expect(state.proofServer.proofVersions).toBeNull();
     });
 

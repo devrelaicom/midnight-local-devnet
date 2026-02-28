@@ -5,7 +5,7 @@ import type { NetworkConfig } from '../../core/types.js';
 import type { NetworkManager } from '../../core/network-manager.js';
 import { StateCollector, type WalletInfo, type PollingConfig, type WalletSyncStatus } from './state-collector.js';
 import { generateDashboardHtml } from './html.js';
-import { getWalletBalances, getWalletAddress, deriveAddressFromMnemonic } from '../../core/wallet.js';
+import { getWalletBalances, getWalletAddress, deriveAddressFromMnemonic, generateNewMnemonic } from '../../core/wallet.js';
 
 export interface DashboardServerOptions {
   config: NetworkConfig;
@@ -36,6 +36,7 @@ export function createDashboardApp(opts: DashboardServerOptions) {
   let walletSyncStatus: WalletSyncStatus = 'idle';
   let walletSyncPromise: Promise<void> | null = null;
   let masterWalletAddress: string | null = null;
+  let lastStateJson: string | null = null;
 
   // ---------- GET / — serve dashboard HTML ----------
   app.get('/', (c) => {
@@ -49,6 +50,11 @@ export function createDashboardApp(opts: DashboardServerOptions) {
 
     wss.on('connection', (ws: WsWebSocket) => {
       clients.add(ws);
+
+      // Send current state immediately so the client doesn't wait for the next tick
+      if (lastStateJson && ws.readyState === ws.OPEN) {
+        ws.send(lastStateJson);
+      }
 
       ws.on('close', () => {
         clients.delete(ws);
@@ -85,7 +91,7 @@ export function createDashboardApp(opts: DashboardServerOptions) {
   async function handleCommand(
     ws: WsWebSocket,
     action: string,
-    msg: { mnemonic?: string; service?: string; interval?: number },
+    msg: { mnemonic?: string; service?: string; interval?: number; accounts?: Array<{ name: string; mnemonic: string }> },
   ) {
     try {
       if (action === 'start') {
@@ -105,6 +111,34 @@ export function createDashboardApp(opts: DashboardServerOptions) {
         try {
           const address = deriveAddressFromMnemonic(mnemonic, config.networkId);
           sendToClient(ws, { type: 'derive-result', address });
+        } catch (err) {
+          const error = err instanceof Error ? err.message : String(err);
+          sendToClient(ws, { type: 'result', action, success: false, error });
+        }
+        return;
+      } else if (action === 'generate-wallet') {
+        try {
+          const mnemonic = generateNewMnemonic();
+          const address = deriveAddressFromMnemonic(mnemonic, config.networkId);
+          sendToClient(ws, { type: 'generate-result', mnemonic, address });
+        } catch (err) {
+          const error = err instanceof Error ? err.message : String(err);
+          sendToClient(ws, { type: 'result', action, success: false, error });
+        }
+        return;
+      } else if (action === 'derive-accounts') {
+        const accounts = msg.accounts;
+        if (!accounts || !Array.isArray(accounts)) {
+          sendToClient(ws, { type: 'result', action, success: false, error: 'Missing accounts array' });
+          return;
+        }
+        try {
+          const results = accounts.map((a) => ({
+            name: a.name,
+            address: deriveAddressFromMnemonic(a.mnemonic, config.networkId),
+            hasMnemonic: true,
+          }));
+          sendToClient(ws, { type: 'derive-accounts-result', accounts: results });
         } catch (err) {
           const error = err instanceof Error ? err.message : String(err);
           sendToClient(ws, { type: 'result', action, success: false, error });
@@ -230,6 +264,7 @@ export function createDashboardApp(opts: DashboardServerOptions) {
         typeof value === 'bigint' ? value.toString() : value,
       );
 
+      lastStateJson = json;
       broadcastRaw(json);
     } catch {
       // Swallow polling errors to keep the interval running

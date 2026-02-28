@@ -109,7 +109,7 @@ export function createDashboardApp(opts: DashboardServerOptions) {
         }
       }
 
-      const state = await collector.collect(walletInfo, manager.getStatus());
+      const state = await collector.collect({ walletInfo, networkStatus: manager.getStatus() });
 
       // JSON.stringify with bigint-safe replacer (just in case)
       const json = JSON.stringify({ type: 'state', data: state }, (_key, value) =>

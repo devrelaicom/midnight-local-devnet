@@ -37,7 +37,7 @@ import {
 } from '../lib/proof-server-api.js';
 import { composePs, composeLogs } from '../../../core/docker.js';
 import { checkAllHealth } from '../../../core/health.js';
-import { StateCollector, type DashboardState, type PollingConfig } from '../state-collector.js';
+import { StateCollector, type DashboardState, type PollingConfig, type CollectOptions } from '../state-collector.js';
 import type { NetworkConfig, ServiceStatus } from '../../../core/types.js';
 
 const mockConfig: NetworkConfig = {
@@ -214,7 +214,7 @@ describe('StateCollector', () => {
         dust: '10.00',
       };
 
-      const state = await collector.collect(walletInfo);
+      const state = await collector.collect({ walletInfo });
 
       expect(state.wallet.address).toBe('midnight1abc123');
       expect(state.wallet.connected).toBe(true);
@@ -238,7 +238,7 @@ describe('StateCollector', () => {
     it('uses networkStatus when provided', async () => {
       setupAllMocksHealthy();
       const collector = new StateCollector(mockConfig);
-      const state = await collector.collect(undefined, 'starting');
+      const state = await collector.collect({ networkStatus: 'starting' });
 
       expect(state.networkStatus).toBe('starting');
     });
@@ -659,13 +659,13 @@ describe('StateCollector', () => {
       setupAllMocksHealthy();
       const collector = new StateCollector(mockConfig);
 
-      const syncing = await collector.collect(undefined, undefined, undefined, 'syncing');
+      const syncing = await collector.collect({ walletSyncStatus: 'syncing' });
       expect(syncing.walletSyncStatus).toBe('syncing');
 
-      const synced = await collector.collect(undefined, undefined, undefined, 'synced');
+      const synced = await collector.collect({ walletSyncStatus: 'synced' });
       expect(synced.walletSyncStatus).toBe('synced');
 
-      const error = await collector.collect(undefined, undefined, undefined, 'error');
+      const error = await collector.collect({ walletSyncStatus: 'error' });
       expect(error.walletSyncStatus).toBe('error');
     });
   });
@@ -687,7 +687,7 @@ describe('StateCollector', () => {
       setupAllMocksHealthy();
       const collector = new StateCollector(mockConfig);
       const polling: PollingConfig = { node: false };
-      const state = await collector.collect(undefined, undefined, polling);
+      const state = await collector.collect({ polling });
 
       expect(fetchSystemChain).not.toHaveBeenCalled();
       expect(fetchSystemName).not.toHaveBeenCalled();
@@ -709,7 +709,7 @@ describe('StateCollector', () => {
       setupAllMocksHealthy();
       const collector = new StateCollector(mockConfig);
       const polling: PollingConfig = { proofServer: false };
-      const state = await collector.collect(undefined, undefined, polling);
+      const state = await collector.collect({ polling });
 
       expect(fetchProofServerVersion).not.toHaveBeenCalled();
       expect(fetchProofServerReady).not.toHaveBeenCalled();
@@ -726,7 +726,7 @@ describe('StateCollector', () => {
       setupAllMocksHealthy();
       const collector = new StateCollector(mockConfig);
       const polling: PollingConfig = { proofVersions: false };
-      const state = await collector.collect(undefined, undefined, polling);
+      const state = await collector.collect({ polling });
 
       expect(fetchProofVersions).not.toHaveBeenCalled();
 
@@ -742,7 +742,7 @@ describe('StateCollector', () => {
       setupAllMocksHealthy();
       const collector = new StateCollector(mockConfig);
       const polling: PollingConfig = { docker: false };
-      const state = await collector.collect(undefined, undefined, polling);
+      const state = await collector.collect({ polling });
 
       expect(composePs).not.toHaveBeenCalled();
       expect(composeLogs).not.toHaveBeenCalled();
@@ -756,7 +756,7 @@ describe('StateCollector', () => {
       setupAllMocksHealthy();
       const collector = new StateCollector(mockConfig);
       const polling: PollingConfig = { health: false };
-      const state = await collector.collect(undefined, undefined, polling);
+      const state = await collector.collect({ polling });
 
       expect(checkAllHealth).not.toHaveBeenCalled();
 
@@ -781,7 +781,7 @@ describe('StateCollector', () => {
       // Second collect: skip node + docker, those should return cached values
       setupAllMocksHealthy(); // re-setup for sections that WILL be fetched
       const polling: PollingConfig = { node: false, docker: false };
-      const state2 = await collector.collect(undefined, undefined, polling);
+      const state2 = await collector.collect({ polling });
 
       expect(fetchSystemChain).not.toHaveBeenCalled();
       expect(composePs).not.toHaveBeenCalled();
@@ -810,7 +810,7 @@ describe('StateCollector', () => {
         docker: false,
         health: false,
       };
-      const state = await collector.collect(undefined, undefined, polling);
+      const state = await collector.collect({ polling });
 
       expect(fetchSystemChain).not.toHaveBeenCalled();
       expect(fetchSystemName).not.toHaveBeenCalled();

@@ -16,9 +16,18 @@ import {
 import { composePs, composeLogs } from '../../core/docker.js';
 import { checkAllHealth } from '../../core/health.js';
 
+export type WalletSyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
+
+export interface CollectOptions {
+  walletInfo?: WalletInfo;
+  networkStatus?: string;
+  polling?: PollingConfig;
+  walletSyncStatus?: WalletSyncStatus;
+}
+
 export interface DashboardState {
   serverTime: string;
-  walletSyncStatus: 'idle' | 'syncing' | 'synced' | 'error';
+  walletSyncStatus: WalletSyncStatus;
   node: {
     chain: string | null;
     name: string | null;
@@ -115,12 +124,9 @@ export class StateCollector {
     this.config = config;
   }
 
-  async collect(
-    walletInfo?: WalletInfo,
-    networkStatus?: string,
-    polling?: PollingConfig,
-    walletSyncStatus?: 'idle' | 'syncing' | 'synced' | 'error',
-  ): Promise<DashboardState> {
+  async collect(opts?: CollectOptions): Promise<DashboardState> {
+    const { walletInfo, networkStatus, polling, walletSyncStatus } = opts ?? {};
+
     // When polling is undefined, all sections are fetched (backward compatible)
     const fetchNode = polling?.node !== false;
     const fetchIndexer = polling?.indexer !== false;
@@ -245,16 +251,16 @@ export class StateCollector {
 
     // --- Docker section ---
     if (fetchDocker) {
-      this.cachedContainers = containers!;
-      this.cachedLogs = parseLogLines(rawLogs!);
+      this.cachedContainers = containers ?? [];
+      this.cachedLogs = parseLogLines(rawLogs ?? '');
     }
 
     return {
       serverTime: new Date().toISOString(),
       walletSyncStatus: walletSyncStatus ?? 'idle',
-      node: this.cachedNode,
-      indexer: this.cachedIndexer,
-      proofServer: this.cachedProofServer,
+      node: { ...this.cachedNode },
+      indexer: { ...this.cachedIndexer },
+      proofServer: { ...this.cachedProofServer },
       wallet: walletInfo ?? {
         address: null,
         connected: false,
@@ -263,8 +269,8 @@ export class StateCollector {
         dust: '0',
       },
       health: this.cachedHealth,
-      containers: this.cachedContainers,
-      logs: this.cachedLogs,
+      containers: [...this.cachedContainers],
+      logs: [...this.cachedLogs],
       networkStatus: networkStatus ?? 'unknown',
     };
   }

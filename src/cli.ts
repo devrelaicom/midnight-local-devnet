@@ -5,6 +5,7 @@ import { registerNetworkCommands } from './cli/commands/network.js';
 import { registerWalletCommands } from './cli/commands/wallet.js';
 import { registerAccountCommands } from './cli/commands/accounts.js';
 import { registerInteractiveCommand } from './cli/commands/interactive.js';
+import { registerDashboardCommand } from './cli/commands/dashboard.js';
 import { createLogger } from './core/logger.js';
 import { setLogger as setWalletLogger } from './core/wallet.js';
 import { setLogger as setFundingLogger } from './core/funding.js';
@@ -40,6 +41,7 @@ registerNetworkCommands(program, manager);
 registerWalletCommands(program, manager);
 registerAccountCommands(program, manager);
 registerInteractiveCommand(program, manager);
+registerDashboardCommand(program, manager);
 
 // Show help when no subcommand is given
 program.action(() => {

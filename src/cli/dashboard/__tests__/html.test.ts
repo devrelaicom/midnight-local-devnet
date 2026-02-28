@@ -41,7 +41,9 @@ describe('generateDashboardHtml', () => {
     expect(html).toContain('LogViewer');
   });
 
-  it('includes Lucide icons from CDN', () => {
+  it('includes inline SVG icons (lucide-style)', () => {
     expect(html).toContain('lucide');
+    expect(html).toContain('viewBox="0 0 24 24"');
+    expect(html).toContain('stroke="currentColor"');
   });
 });

@@ -2,6 +2,12 @@
  * Generates a complete single-page HTML dashboard for the Midnight local devnet.
  * Uses Preact + HTM via CDN import maps. All CSS and JS are inline.
  */
+function safeJsonInScript(value: string): string {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e');
+}
+
 export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -651,7 +657,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
     };
 
     // --- WebSocket URL (injected at generation time) ---
-    const WS_URL = ${JSON.stringify(wsUrl)};
+    const WS_URL = ${safeJsonInScript(wsUrl)};
 
     // --- Utility functions ---
     function formatNumber(n) {
@@ -967,7 +973,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
           </div>
           <div class="log-entries" ref=\${entriesRef} onScroll=\${handleScroll}>
             \${filteredLogs.map((log, i) => html\`
-              <div class="log-line" key=\${i}>
+              <div class="log-line" key=\${log.service + '-' + i + '-' + (log.message || '').slice(0, 20)}>
                 <span class="log-tag \${(log.service || '').replace('-', '')}">\${log.service || 'sys'}</span>
                 <span class="log-level \${log.level}">\${(log.level || 'info').toUpperCase()}</span>
                 <span class="log-message">\${log.message || log.raw || ''}</span>
@@ -1083,8 +1089,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
     render(html\`<\${App} />\`, document.getElementById('app'));
   </script>
 
-  <!-- lucide icons loaded for reference, actual icons are inline SVGs above -->
-  <link rel="modulepreload" href="https://esm.sh/lucide@0.344.0" />
+  <!-- lucide-style icons rendered as inline SVGs above -->
 </body>
 </html>`;
 }

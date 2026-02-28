@@ -57,16 +57,20 @@ export function deriveAddressFromMnemonic(mnemonic: string, networkId: string): 
   if (hdResult.type !== 'seedOk') {
     throw new DevnetError('Invalid mnemonic', 'HD_WALLET_ERROR');
   }
-  const derivation = hdResult.hdWallet
-    .selectAccount(0)
-    .selectRoles([Roles.NightExternal] as const)
-    .deriveKeysAt(0);
-  hdResult.hdWallet.clear();
-  if (derivation.type !== 'keysDerived') {
-    throw new DevnetError('Key derivation failed', 'KEY_DERIVATION_ERROR');
+  const { hdWallet } = hdResult;
+  try {
+    const derivation = hdWallet
+      .selectAccount(0)
+      .selectRoles([Roles.NightExternal] as const)
+      .deriveKeysAt(0);
+    if (derivation.type !== 'keysDerived') {
+      throw new DevnetError('Key derivation failed', 'KEY_DERIVATION_ERROR');
+    }
+    const keystore = createKeystore(derivation.keys[Roles.NightExternal], networkId as any);
+    return UnshieldedPublicKey.fromKeyStore(keystore).publicKey;
+  } finally {
+    hdWallet.clear();
   }
-  const keystore = createKeystore(derivation.keys[Roles.NightExternal], networkId as any);
-  return UnshieldedPublicKey.fromKeyStore(keystore).publicKey;
 }
 
 // ── Wallet initialization ──────────────────────────────────────────────────

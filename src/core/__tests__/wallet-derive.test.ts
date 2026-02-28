@@ -45,7 +45,7 @@ vi.mock('ws', () => ({
 
 import { HDWallet } from '@midnight-ntwrk/wallet-sdk-hd';
 import { createKeystore, PublicKey as UnshieldedPublicKey } from '@midnight-ntwrk/wallet-sdk-unshielded-wallet';
-import { deriveAddressFromMnemonic } from '../../../core/wallet.js';
+import { deriveAddressFromMnemonic } from '../wallet.js';
 
 describe('deriveAddressFromMnemonic', () => {
   const validMnemonic =

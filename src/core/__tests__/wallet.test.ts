@@ -21,6 +21,7 @@ describe('wallet', () => {
       expect(typeof wallet.closeWallet).toBe('function');
       expect(typeof wallet.generateNewMnemonic).toBe('function');
       expect(typeof wallet.mnemonicToSeed).toBe('function');
+      expect(typeof wallet.deriveAddressFromMnemonic).toBe('function');
     });
   });
 

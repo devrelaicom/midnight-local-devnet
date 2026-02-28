@@ -902,6 +902,98 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
     .toast.error { border-left: 3px solid var(--mn-error); }
     .toast.fade-out { animation: fadeOut 0.3s ease-out forwards; }
 
+    /* --- Card Footer (server time) --- */
+    .card-footer {
+      color: var(--mn-text-muted);
+      font-size: 11px;
+      text-align: right;
+      margin-top: 12px;
+    }
+
+    /* --- Disabled Button --- */
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .btn-spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--mn-border);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+
+    /* --- Polling Settings Popover --- */
+    .settings-wrapper {
+      position: relative;
+    }
+
+    .settings-popover {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 280px;
+      background: var(--mn-surface);
+      border: 1px solid var(--mn-border-bright);
+      border-radius: 10px;
+      padding: 16px;
+      z-index: 50;
+      box-shadow: 0 8px 32px rgba(9, 9, 15, 0.6);
+      animation: fadeInUp 0.15s ease-out;
+    }
+
+    .settings-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--mn-text);
+      margin-bottom: 12px;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+    }
+
+    .settings-row:not(:last-child) {
+      border-bottom: 1px solid var(--mn-border);
+    }
+
+    .settings-label {
+      font-size: 12px;
+      color: var(--mn-text-secondary);
+    }
+
+    .settings-input {
+      width: 64px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--mn-border);
+      background: var(--mn-surface-alt);
+      color: var(--mn-text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .settings-input:focus {
+      border-color: var(--mn-accent);
+    }
+
+    .settings-unit {
+      font-size: 11px;
+      color: var(--mn-text-muted);
+      margin-left: 4px;
+    }
+
     /* --- Responsive --- */
     @media (max-width: 768px) {
       #app { padding: 12px; }
@@ -938,6 +1030,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       trash: html\`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>\`,
       plus: html\`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>\`,
       x: html\`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>\`,
+      settings: html\`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>\`,
     };
 
     // --- WebSocket URL (injected at generation time) ---
@@ -971,6 +1064,19 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       if (pct >= 70) return 'var(--mn-warning)';
       return 'var(--mn-success)';
     }
+
+    function formatTime(isoString) {
+      if (!isoString) return '--:--:--';
+      try {
+        const d = new Date(isoString);
+        if (isNaN(d.getTime())) return '--:--:--';
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      } catch (e) {
+        return '--:--:--';
+      }
+    }
+
+    const POLLING_KEY = 'mn-polling-config';
 
     // --- Default state ---
     const defaultState = {
@@ -1018,9 +1124,102 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       \`;
     }
 
+    // --- PollingSettings ---
+    function PollingSettings({ sendMessage }) {
+      const [open, setOpen] = useState(false);
+      const [config, setConfig] = useState(() => {
+        try {
+          const raw = localStorage.getItem(POLLING_KEY);
+          if (raw) return JSON.parse(raw);
+        } catch (e) { /* ignore */ }
+        return { node: 5, indexer: 5, proofServer: 5 };
+      });
+
+      // Send saved polling config on mount
+      useEffect(() => {
+        const saved = config;
+        ['node', 'indexer', 'proofServer'].forEach(service => {
+          if (saved[service] && saved[service] !== 5) {
+            sendMessage({ type: 'command', action: 'set-polling', service, interval: saved[service] * 1000 });
+          }
+        });
+      }, []);
+
+      const handleChange = useCallback((service, value) => {
+        const num = Math.max(1, Math.min(60, parseInt(value, 10) || 5));
+        setConfig(prev => {
+          const updated = { ...prev, [service]: num };
+          localStorage.setItem(POLLING_KEY, JSON.stringify(updated));
+          return updated;
+        });
+        sendMessage({ type: 'command', action: 'set-polling', service, interval: num * 1000 });
+      }, [sendMessage]);
+
+      return html\`
+        <div class="settings-wrapper">
+          <button class="btn" onClick=\${() => setOpen(!open)} title="Polling Settings">
+            \${icons.settings}
+          </button>
+          \${open ? html\`
+            <div class="settings-popover">
+              <div class="settings-title">Polling Intervals</div>
+              <div class="settings-row">
+                <span class="settings-label">Node</span>
+                <div>
+                  <input class="settings-input" type="number" min="1" max="60"
+                         value=\${config.node}
+                         onChange=\${e => handleChange('node', e.target.value)} />
+                  <span class="settings-unit">sec</span>
+                </div>
+              </div>
+              <div class="settings-row">
+                <span class="settings-label">Indexer</span>
+                <div>
+                  <input class="settings-input" type="number" min="1" max="60"
+                         value=\${config.indexer}
+                         onChange=\${e => handleChange('indexer', e.target.value)} />
+                  <span class="settings-unit">sec</span>
+                </div>
+              </div>
+              <div class="settings-row">
+                <span class="settings-label">Proof Server</span>
+                <div>
+                  <input class="settings-input" type="number" min="1" max="60"
+                         value=\${config.proofServer}
+                         onChange=\${e => handleChange('proofServer', e.target.value)} />
+                  <span class="settings-unit">sec</span>
+                </div>
+              </div>
+            </div>
+          \` : null}
+        </div>
+      \`;
+    }
+
     // --- Header ---
-    function Header({ networkStatus, onStart, onStop }) {
+    function Header({ networkStatus, onStart, onStop, sendMessage }) {
       const statusLabel = networkStatus.charAt(0).toUpperCase() + networkStatus.slice(1);
+
+      const renderButtons = () => {
+        if (networkStatus === 'running') {
+          return html\`<button class="btn btn-danger" onClick=\${onStop}>\${icons.square} Stop</button>\`;
+        }
+        if (networkStatus === 'stopped') {
+          return html\`<button class="btn btn-primary" onClick=\${onStart}>\${icons.play} Start</button>\`;
+        }
+        if (networkStatus === 'starting') {
+          return html\`<button class="btn btn-primary" disabled><span class="btn-spinner"></span> Starting...</button>\`;
+        }
+        if (networkStatus === 'stopping') {
+          return html\`<button class="btn btn-danger" disabled><span class="btn-spinner"></span> Stopping...</button>\`;
+        }
+        // unknown — show both
+        return html\`
+          <button class="btn btn-primary" onClick=\${onStart}>\${icons.play} Start</button>
+          <button class="btn btn-danger" onClick=\${onStop}>\${icons.square} Stop</button>
+        \`;
+      };
+
       return html\`
         <div class="header fade-in">
           <div class="header-left">
@@ -1031,15 +1230,15 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
             </div>
           </div>
           <div class="header-actions">
-            <button class="btn btn-primary" onClick=\${onStart}>\${icons.play} Start</button>
-            <button class="btn btn-danger" onClick=\${onStop}>\${icons.square} Stop</button>
+            \${renderButtons()}
+            <\${PollingSettings} sendMessage=\${sendMessage} />
           </div>
         </div>
       \`;
     }
 
     // --- NodeCard ---
-    function NodeCard({ node, health }) {
+    function NodeCard({ node, health, serverTime }) {
       const blockTimeStr = node.avgBlockTime != null ? (node.avgBlockTime / 1000).toFixed(1) + 's' : '--';
       return html\`
         <div class="card fade-in" style="animation-delay: 0ms">
@@ -1066,12 +1265,13 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
               <span class="stat-row-value">\${node.version || '--'}</span>
             </div>
           </div>
+          <div class="card-footer">\${formatTime(serverTime)}</div>
         </div>
       \`;
     }
 
     // --- IndexerCard ---
-    function IndexerCard({ indexer, health }) {
+    function IndexerCard({ indexer, health, serverTime }) {
       return html\`
         <div class="card fade-in" style="animation-delay: 150ms">
           <div class="card-header">
@@ -1089,15 +1289,19 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
               <span class="stat-row-value">\${formatMs(indexer.responseTime)}</span>
             </div>
           </div>
+          <div class="card-footer">\${formatTime(serverTime)}</div>
         </div>
       \`;
     }
 
     // --- ProofServerCard ---
-    function ProofServerCard({ proofServer, health }) {
+    function ProofServerCard({ proofServer, health, serverTime }) {
       const capacity = proofServer.jobCapacity || 1;
       const processing = proofServer.jobsProcessing || 0;
       const pct = Math.min(100, (processing / capacity) * 100);
+      const proofVersionsDisplay = proofServer.proofVersions && proofServer.proofVersions.length > 0
+        ? proofServer.proofVersions.join(', ')
+        : 'None';
       return html\`
         <div class="card fade-in" style="animation-delay: 300ms">
           <div class="card-header">
@@ -1120,10 +1324,15 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
           </div>
           <div style="margin-top: 10px">
             <div class="stat-row">
-              <span class="stat-row-label">Version</span>
+              <span class="stat-row-label">Server Version</span>
               <span class="stat-row-value">\${proofServer.version || '--'}</span>
             </div>
+            <div class="stat-row">
+              <span class="stat-row-label">Proof Versions</span>
+              <span class="stat-row-value">\${proofVersionsDisplay}</span>
+            </div>
           </div>
+          <div class="card-footer">\${formatTime(serverTime)}</div>
         </div>
       \`;
     }
@@ -1638,11 +1847,11 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       return html\`
         <\${ConnectionStatus} connected=\${connected} />
         <\${ToastContainer} toasts=\${toasts} onRemove=\${removeToast} />
-        <\${Header} networkStatus=\${state.networkStatus} onStart=\${() => sendCommand('start')} onStop=\${() => sendCommand('stop')} />
+        <\${Header} networkStatus=\${state.networkStatus} onStart=\${() => sendCommand('start')} onStop=\${() => sendCommand('stop')} sendMessage=\${sendMessage} />
         <div class="cards-grid">
-          <\${NodeCard} node=\${state.node} health=\${state.health.node} />
-          <\${IndexerCard} indexer=\${state.indexer} health=\${state.health.indexer} />
-          <\${ProofServerCard} proofServer=\${state.proofServer} health=\${state.health.proofServer} />
+          <\${NodeCard} node=\${state.node} health=\${state.health.node} serverTime=\${state.serverTime} />
+          <\${IndexerCard} indexer=\${state.indexer} health=\${state.health.indexer} serverTime=\${state.serverTime} />
+          <\${ProofServerCard} proofServer=\${state.proofServer} health=\${state.health.proofServer} serverTime=\${state.serverTime} />
         </div>
         <div class="cards-grid">
           <\${WalletCard} wallet=\${state.wallet} walletSyncStatus=\${state.walletSyncStatus} sendMessage=\${sendMessage} onOpenImportModal=\${() => { setDeriveResult(null); setShowImportModal(true); }} importHandlerRef=\${importHandlerRef} />

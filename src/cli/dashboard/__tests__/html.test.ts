@@ -172,4 +172,94 @@ describe('generateDashboardHtml', () => {
   it('uses crypto.randomUUID for wallet IDs', () => {
     expect(html).toContain('crypto.randomUUID()');
   });
+
+  // --- Task 5: Service card improvements ---
+
+  // 5a: Proof server version display
+  it('shows Server Version and Proof Versions in ProofServerCard', () => {
+    expect(html).toContain('Server Version');
+    expect(html).toContain('Proof Versions');
+    expect(html).toContain('proofVersionsDisplay');
+  });
+
+  it('displays proofVersions as comma-separated list or None', () => {
+    expect(html).toContain("proofServer.proofVersions.join(', ')");
+    expect(html).toContain("'None'");
+  });
+
+  // 5b: Server time in card footers
+  it('includes formatTime utility function', () => {
+    expect(html).toContain('function formatTime');
+    expect(html).toContain('toLocaleTimeString');
+    expect(html).toContain("'--:--:--'");
+  });
+
+  it('includes card-footer CSS class', () => {
+    expect(html).toContain('.card-footer');
+  });
+
+  it('passes serverTime prop to service cards', () => {
+    expect(html).toContain('serverTime=${state.serverTime}');
+  });
+
+  it('renders card-footer with formatTime in each service card', () => {
+    // Each card should have a card-footer div calling formatTime
+    const footerMatches = html.match(/card-footer.*?formatTime/g);
+    expect(footerMatches).not.toBeNull();
+    expect(footerMatches!.length).toBeGreaterThanOrEqual(3);
+  });
+
+  // 5c: Conditional start/stop buttons
+  it('includes conditional button rendering logic based on networkStatus', () => {
+    expect(html).toContain("networkStatus === 'running'");
+    expect(html).toContain("networkStatus === 'stopped'");
+    expect(html).toContain("networkStatus === 'starting'");
+    expect(html).toContain("networkStatus === 'stopping'");
+    expect(html).toContain('renderButtons');
+  });
+
+  it('includes disabled button styling', () => {
+    expect(html).toContain('.btn:disabled');
+    expect(html).toContain('btn-spinner');
+  });
+
+  it('shows spinner text for starting and stopping states', () => {
+    expect(html).toContain('Starting...');
+    expect(html).toContain('Stopping...');
+  });
+
+  // 5d: Polling frequency control
+  it('includes settings gear icon', () => {
+    expect(html).toContain('settings:');
+  });
+
+  it('includes PollingSettings component', () => {
+    expect(html).toContain('PollingSettings');
+    expect(html).toContain('Polling Intervals');
+  });
+
+  it('includes polling settings popover CSS', () => {
+    expect(html).toContain('.settings-popover');
+    expect(html).toContain('.settings-wrapper');
+    expect(html).toContain('.settings-input');
+  });
+
+  it('sends set-polling WS command on change', () => {
+    expect(html).toContain("action: 'set-polling'");
+  });
+
+  it('persists polling config in localStorage', () => {
+    expect(html).toContain('mn-polling-config');
+    expect(html).toContain('POLLING_KEY');
+  });
+
+  it('includes number inputs for node, indexer, and proof server polling', () => {
+    expect(html).toContain("handleChange('node'");
+    expect(html).toContain("handleChange('indexer'");
+    expect(html).toContain("handleChange('proofServer'");
+  });
+
+  it('passes sendMessage to Header for polling settings', () => {
+    expect(html).toContain('sendMessage=${sendMessage}');
+  });
 });

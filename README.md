@@ -13,16 +13,16 @@ A CLI and MCP (Model Context Protocol) server for managing a local Docker-based 
 
 ### CLI
 
-Run with no arguments to enter interactive mode:
-
-```bash
-npx @aaronbassett/midnight-local-devnet
-```
-
-Or start the network directly:
+Start the network:
 
 ```bash
 npx @aaronbassett/midnight-local-devnet start
+```
+
+Open the realtime dashboard in a second terminal pane to monitor your devnet:
+
+```bash
+npx @aaronbassett/midnight-local-devnet dashboard
 ```
 
 ### MCP Server
@@ -58,9 +58,48 @@ All commands can be run via `npx @aaronbassett/midnight-local-devnet <command>`.
 | `fund <address>` | Fund a Bech32 address with NIGHT tokens | `--amount <n>` Amount in NIGHT (default: 50,000) |
 | `fund-file <path>` | Fund all accounts from an accounts.json file | |
 | `generate-accounts` | Generate random test accounts | `--count <n>`, `--format <mnemonic\|privateKey>`, `--output <path>`, `--fund`, `--register-dust` |
+| `dashboard` | Open realtime terminal dashboard | |
 | `interactive` | Start interactive menu mode | |
 
-Running with no arguments automatically enters interactive mode.
+Running with no arguments displays help.
+
+## Dashboard
+
+The `dashboard` command opens a realtime terminal UI that displays the state of all local devnet services. It's designed to run in a side terminal pane while you develop.
+
+```bash
+npx @aaronbassett/midnight-local-devnet dashboard
+```
+
+The dashboard shows:
+
+- **Node** -- Block height, average block time, chain, peers, sync status, version
+- **Indexer** -- Indexed block height, lag vs node, readiness
+- **Proof Server** -- Version, proof versions, job processing/pending/capacity
+- **Wallet** -- Master wallet NIGHT (unshielded + shielded) and DUST balances
+- **Logs** -- Combined color-coded log stream from all services, filterable by service, level, or substring search
+- **Response Times** -- Sparkline charts of per-service response times (large terminals only)
+
+The layout adapts to your terminal width:
+
+| Terminal Width | Layout |
+|---|---|
+| < 40 columns | Single column, compact |
+| 40--119 columns | Two-column grid |
+| 120+ columns | Three-column with response time graphs |
+
+Keyboard shortcuts:
+
+| Key | Action |
+|---|---|
+| Tab | Cycle focus between panels |
+| Up/Down | Scroll logs (when focused) |
+| `s` | Cycle log service filter |
+| `l` | Cycle log level filter |
+| `/` | Enter log search mode |
+| `q` | Exit dashboard |
+
+The dashboard starts regardless of whether the network is running. Panels show "Connecting..." and update live when services come up.
 
 ## MCP Tool Reference
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Text } from 'ink';
+import { Text } from 'ink';
 import { PanelBox } from '../components/panel-box.js';
 import { StatusBadge } from '../components/status-badge.js';
 import type { NodeInfo } from '../hooks/use-node-info.js';

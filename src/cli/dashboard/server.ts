@@ -3,9 +3,9 @@ import { WebSocketServer, type WebSocket as WsWebSocket } from 'ws';
 import type { Server } from 'node:http';
 import type { NetworkConfig } from '../../core/types.js';
 import type { NetworkManager } from '../../core/network-manager.js';
-import { StateCollector, type WalletInfo } from './state-collector.js';
+import { StateCollector, type WalletInfo, type PollingConfig, type WalletSyncStatus } from './state-collector.js';
 import { generateDashboardHtml } from './html.js';
-import { getWalletBalances } from '../../core/wallet.js';
+import { getWalletBalances, getWalletAddress, deriveAddressFromMnemonic } from '../../core/wallet.js';
 
 export interface DashboardServerOptions {
   config: NetworkConfig;
@@ -18,7 +18,23 @@ export function createDashboardApp(opts: DashboardServerOptions) {
   const app = new Hono();
   const collector = new StateCollector(config);
   const clients = new Set<WsWebSocket>();
-  let pollingInterval: ReturnType<typeof setInterval> | null = null;
+  let pollingTimer: ReturnType<typeof setInterval> | null = null;
+
+  // ---------- Per-service polling intervals ----------
+  const intervals: Record<string, number> = {
+    node: 5000,
+    indexer: 5000,
+    proofServer: 5000,
+    proofVersions: 600_000,
+    docker: 5000,
+    health: 5000,
+  };
+  const lastFetch: Record<string, number> = {};
+
+  // ---------- Wallet sync state ----------
+  let walletSyncStatus: WalletSyncStatus = 'idle';
+  let walletSyncPromise: Promise<void> | null = null;
+  let masterWalletAddress: string | null = null;
 
   // ---------- GET / — serve dashboard HTML ----------
   app.get('/', (c) => {
@@ -49,22 +65,65 @@ export function createDashboardApp(opts: DashboardServerOptions) {
   async function handleClientMessage(ws: WsWebSocket, raw: Buffer | ArrayBuffer | Buffer[]) {
     try {
       const text = typeof raw === 'string' ? raw : raw.toString();
-      const msg = JSON.parse(text) as { type?: string; action?: string };
+      const msg = JSON.parse(text) as {
+        type?: string;
+        action?: string;
+        mnemonic?: string;
+        service?: string;
+        interval?: number;
+      };
 
       if (msg.type === 'command' && msg.action) {
-        await handleCommand(ws, msg.action);
+        await handleCommand(ws, msg.action, msg);
       }
     } catch {
       // Ignore malformed messages
     }
   }
 
-  async function handleCommand(ws: WsWebSocket, action: string) {
+  async function handleCommand(
+    ws: WsWebSocket,
+    action: string,
+    msg: { mnemonic?: string; service?: string; interval?: number },
+  ) {
     try {
       if (action === 'start') {
         await manager.start({ pull: false });
       } else if (action === 'stop') {
         await manager.stop({ removeVolumes: false });
+      } else if (action === 'sync-wallet') {
+        handleSyncWallet();
+        sendToClient(ws, { type: 'result', action, success: true });
+        return;
+      } else if (action === 'derive-address') {
+        const mnemonic = msg.mnemonic;
+        if (!mnemonic) {
+          sendToClient(ws, { type: 'result', action, success: false, error: 'Missing mnemonic' });
+          return;
+        }
+        try {
+          const address = deriveAddressFromMnemonic(mnemonic, config.networkId);
+          sendToClient(ws, { type: 'derive-result', address });
+        } catch (err) {
+          const error = err instanceof Error ? err.message : String(err);
+          sendToClient(ws, { type: 'result', action, success: false, error });
+        }
+        return;
+      } else if (action === 'set-polling') {
+        const { service, interval } = msg;
+        if (!service || typeof interval !== 'number' || interval < 1000) {
+          sendToClient(ws, {
+            type: 'result',
+            action,
+            success: false,
+            error: 'Invalid service or interval (min 1000ms)',
+          });
+          return;
+        }
+        intervals[service] = interval;
+        broadcast({ type: 'polling-updated', service, interval });
+        sendToClient(ws, { type: 'result', action, success: true });
+        return;
       } else {
         sendToClient(ws, { type: 'result', action, success: false, error: `Unknown action: ${action}` });
         return;
@@ -76,14 +135,58 @@ export function createDashboardApp(opts: DashboardServerOptions) {
     }
   }
 
+  // ---------- Wallet sync ----------
+  function handleSyncWallet(): void {
+    // Prevent concurrent wallet sync operations
+    if (walletSyncPromise) return;
+
+    walletSyncStatus = 'syncing';
+    broadcast({ type: 'wallet-sync-status', status: walletSyncStatus });
+
+    walletSyncPromise = (async () => {
+      try {
+        const ctx = await manager.ensureWallet();
+        masterWalletAddress = getWalletAddress(ctx);
+        walletSyncStatus = 'synced';
+      } catch {
+        walletSyncStatus = 'error';
+      } finally {
+        walletSyncPromise = null;
+        broadcast({ type: 'wallet-sync-status', status: walletSyncStatus });
+      }
+    })();
+  }
+
   function sendToClient(ws: WsWebSocket, data: unknown) {
     if (ws.readyState === ws.OPEN) {
       ws.send(JSON.stringify(data));
     }
   }
 
-  // ---------- Polling + broadcast ----------
-  async function collectAndBroadcast(): Promise<void> {
+  function broadcast(data: unknown) {
+    const json = JSON.stringify(data);
+    for (const ws of clients) {
+      if (ws.readyState === ws.OPEN) {
+        ws.send(json);
+      }
+    }
+  }
+
+  // ---------- Tick-based polling + broadcast ----------
+  function tick(): void {
+    const now = Date.now();
+    const polling: PollingConfig = {};
+
+    for (const [key, interval] of Object.entries(intervals)) {
+      const shouldFetch = !lastFetch[key] || (now - lastFetch[key]) >= interval;
+      (polling as Record<string, boolean>)[key] = shouldFetch;
+      if (shouldFetch) lastFetch[key] = now;
+    }
+
+    collectAndBroadcast(polling);
+  }
+
+  async function collectAndBroadcast(polling?: PollingConfig): Promise<void> {
     try {
       let walletInfo: WalletInfo | undefined;
 
@@ -92,7 +195,7 @@ export function createDashboardApp(opts: DashboardServerOptions) {
         try {
           const balances = await getWalletBalances(walletCtx);
           walletInfo = {
-            address: null, // Address extraction requires wallet SDK; use null for MVP
+            address: masterWalletAddress,
             connected: true,
             unshielded: balances.unshielded.toString(),
             shielded: balances.shielded.toString(),
@@ -100,7 +203,7 @@ export function createDashboardApp(opts: DashboardServerOptions) {
           };
         } catch {
           walletInfo = {
-            address: null,
+            address: masterWalletAddress,
             connected: false,
             unshielded: '0',
             shielded: '0',
@@ -109,7 +212,12 @@ export function createDashboardApp(opts: DashboardServerOptions) {
         }
       }
 
-      const state = await collector.collect({ walletInfo, networkStatus: manager.getStatus() });
+      const state = await collector.collect({
+        walletInfo,
+        networkStatus: manager.getStatus(),
+        polling,
+        walletSyncStatus,
+      });
 
       // JSON.stringify with bigint-safe replacer (just in case)
       const json = JSON.stringify({ type: 'state', data: state }, (_key, value) =>
@@ -127,15 +235,15 @@ export function createDashboardApp(opts: DashboardServerOptions) {
   }
 
   function startPolling(): void {
-    // Collect immediately, then every 3 seconds
+    // Collect immediately (all services), then use tick-based polling
     collectAndBroadcast();
-    pollingInterval = setInterval(collectAndBroadcast, 3000);
+    pollingTimer = setInterval(tick, 1000);
   }
 
   function stopPolling(): void {
-    if (pollingInterval !== null) {
-      clearInterval(pollingInterval);
-      pollingInterval = null;
+    if (pollingTimer !== null) {
+      clearInterval(pollingTimer);
+      pollingTimer = null;
     }
   }
 

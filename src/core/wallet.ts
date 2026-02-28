@@ -73,6 +73,12 @@ export function deriveAddressFromMnemonic(mnemonic: string, networkId: string): 
   }
 }
 
+// ── Wallet address extraction ──────────────────────────────────────────────
+
+export function getWalletAddress(ctx: WalletContext): string {
+  return UnshieldedPublicKey.fromKeyStore(ctx.unshieldedKeystore).publicKey;
+}
+
 // ── Wallet initialization ──────────────────────────────────────────────────
 
 export async function initWalletFromSeed(

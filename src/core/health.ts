@@ -18,6 +18,9 @@ async function checkEndpoint(url: string): Promise<ServiceHealth> {
   const start = Date.now();
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    // Consume the body so the underlying TCP connection is released back to the pool.
+    // Without this, undici keeps the socket open and connections leak on every poll cycle.
+    await response.body?.cancel();
     return {
       healthy: response.ok,
       responseTime: Date.now() - start,
@@ -37,7 +40,7 @@ export async function checkAllHealth(config?: NetworkConfig): Promise<HealthRepo
   const [node, indexer, proofServer] = await Promise.all([
     checkEndpoint(`${cfg.node}/health`),
     checkEndpoint(`${indexerOrigin}/ready`),
-    checkEndpoint(`${cfg.proofServer}/health`),
+    checkEndpoint(`${cfg.proofServer}/version`),
   ]);
 
   return {

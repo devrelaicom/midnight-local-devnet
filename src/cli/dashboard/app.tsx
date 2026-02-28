@@ -38,6 +38,8 @@ export function App({ manager, config }: AppProps): React.ReactElement {
   const [searchMode, setSearchMode] = useState(false);
   const [searchText, setSearchText] = useState('');
 
+  const isInteractive = process.stdin.isTTY === true;
+
   useInput((input, key) => {
     if (searchMode) {
       if (key.escape || key.return) {
@@ -95,7 +97,7 @@ export function App({ manager, config }: AppProps): React.ReactElement {
       if (focusedPanel === 'logs') logs.scrollDown();
       return;
     }
-  });
+  }, { isActive: isInteractive });
 
   const data: DashboardData = {
     node: nodeInfo.data,

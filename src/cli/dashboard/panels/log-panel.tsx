@@ -52,7 +52,7 @@ export function LogPanel({
         <Text color="gray">No log entries{filter.service || filter.level || filter.search ? ' matching filter' : ''}</Text>
       ) : (
         visibleLines.map((line, i) => (
-          <Box key={i}>
+          <Box key={`${scrollOffset + i}-${line.service}`}>
             <Text color={SERVICE_COLORS[line.service] ?? 'gray'}>
               [{line.service.padEnd(6).slice(0, 6)}]
             </Text>

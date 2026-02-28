@@ -6,6 +6,12 @@ export function registerDashboardCommand(program: Command, manager: NetworkManag
     .command('dashboard')
     .description('Open realtime terminal dashboard for the local devnet')
     .action(async () => {
+      if (!process.stdin.isTTY) {
+        console.error('Error: Dashboard requires an interactive terminal (TTY).');
+        console.error('Run this command directly in a terminal, not through a pipe or script.');
+        process.exit(1);
+      }
+
       // Dynamic import to avoid loading React/ink for non-dashboard commands
       const { render } = await import('ink');
       const React = await import('react');

@@ -37,7 +37,7 @@ import {
 } from '../lib/proof-server-api.js';
 import { composePs, composeLogs } from '../../../core/docker.js';
 import { checkAllHealth } from '../../../core/health.js';
-import { StateCollector, type DashboardState } from '../state-collector.js';
+import { StateCollector, type DashboardState, type PollingConfig, type CollectOptions } from '../state-collector.js';
 import type { NetworkConfig, ServiceStatus } from '../../../core/types.js';
 
 const mockConfig: NetworkConfig = {
@@ -214,7 +214,7 @@ describe('StateCollector', () => {
         dust: '10.00',
       };
 
-      const state = await collector.collect(walletInfo);
+      const state = await collector.collect({ walletInfo });
 
       expect(state.wallet.address).toBe('midnight1abc123');
       expect(state.wallet.connected).toBe(true);
@@ -238,7 +238,7 @@ describe('StateCollector', () => {
     it('uses networkStatus when provided', async () => {
       setupAllMocksHealthy();
       const collector = new StateCollector(mockConfig);
-      const state = await collector.collect(undefined, 'starting');
+      const state = await collector.collect({ networkStatus: 'starting' });
 
       expect(state.networkStatus).toBe('starting');
     });
@@ -579,6 +579,8 @@ describe('StateCollector', () => {
       const collector = new StateCollector(mockConfig);
       const state = await collector.collect();
 
+      expect(state).toHaveProperty('serverTime');
+      expect(state).toHaveProperty('walletSyncStatus');
       expect(state).toHaveProperty('node');
       expect(state).toHaveProperty('indexer');
       expect(state).toHaveProperty('proofServer');
@@ -614,6 +616,218 @@ describe('StateCollector', () => {
       expect(state.proofServer).toHaveProperty('jobsPending');
       expect(state.proofServer).toHaveProperty('jobCapacity');
       expect(state.proofServer).toHaveProperty('proofVersions');
+    });
+  });
+
+  describe('serverTime', () => {
+    it('returns an ISO 8601 timestamp', async () => {
+      setupAllMocksHealthy();
+      const collector = new StateCollector(mockConfig);
+      const before = new Date().toISOString();
+      const state = await collector.collect();
+      const after = new Date().toISOString();
+
+      expect(state.serverTime).toBeTruthy();
+      // Valid ISO 8601 format
+      expect(() => new Date(state.serverTime)).not.toThrow();
+      expect(new Date(state.serverTime).toISOString()).toBe(state.serverTime);
+      // Within the time window
+      expect(state.serverTime >= before).toBe(true);
+      expect(state.serverTime <= after).toBe(true);
+    });
+
+    it('is always present even when services are offline', async () => {
+      setupAllMocksOffline();
+      const collector = new StateCollector(mockConfig);
+      const state = await collector.collect();
+
+      expect(state.serverTime).toBeTruthy();
+      expect(new Date(state.serverTime).toISOString()).toBe(state.serverTime);
+    });
+  });
+
+  describe('walletSyncStatus', () => {
+    it('defaults to idle when not provided', async () => {
+      setupAllMocksHealthy();
+      const collector = new StateCollector(mockConfig);
+      const state = await collector.collect();
+
+      expect(state.walletSyncStatus).toBe('idle');
+    });
+
+    it('uses the provided walletSyncStatus value', async () => {
+      setupAllMocksHealthy();
+      const collector = new StateCollector(mockConfig);
+
+      const syncing = await collector.collect({ walletSyncStatus: 'syncing' });
+      expect(syncing.walletSyncStatus).toBe('syncing');
+
+      const synced = await collector.collect({ walletSyncStatus: 'synced' });
+      expect(synced.walletSyncStatus).toBe('synced');
+
+      const error = await collector.collect({ walletSyncStatus: 'error' });
+      expect(error.walletSyncStatus).toBe('error');
+    });
+  });
+
+  describe('PollingConfig', () => {
+    it('fetches all sections when polling is undefined (backward compatible)', async () => {
+      setupAllMocksHealthy();
+      const collector = new StateCollector(mockConfig);
+      await collector.collect();
+
+      expect(fetchSystemChain).toHaveBeenCalled();
+      expect(fetchProofServerVersion).toHaveBeenCalled();
+      expect(fetchProofVersions).toHaveBeenCalled();
+      expect(composePs).toHaveBeenCalled();
+      expect(checkAllHealth).toHaveBeenCalled();
+    });
+
+    it('skips node fetches when node polling is false', async () => {
+      setupAllMocksHealthy();
+      const collector = new StateCollector(mockConfig);
+      const polling: PollingConfig = { node: false };
+      const state = await collector.collect({ polling });
+
+      expect(fetchSystemChain).not.toHaveBeenCalled();
+      expect(fetchSystemName).not.toHaveBeenCalled();
+      expect(fetchSystemVersion).not.toHaveBeenCalled();
+      expect(fetchSystemHealth).not.toHaveBeenCalled();
+      expect(fetchBestBlockHeader).not.toHaveBeenCalled();
+
+      // Other sections still fetched
+      expect(fetchProofServerVersion).toHaveBeenCalled();
+      expect(composePs).toHaveBeenCalled();
+      expect(checkAllHealth).toHaveBeenCalled();
+
+      // Node returns cached defaults (nulls)
+      expect(state.node.chain).toBeNull();
+      expect(state.node.blockHeight).toBeNull();
+    });
+
+    it('skips proof server fetches when proofServer polling is false', async () => {
+      setupAllMocksHealthy();
+      const collector = new StateCollector(mockConfig);
+      const polling: PollingConfig = { proofServer: false };
+      const state = await collector.collect({ polling });
+
+      expect(fetchProofServerVersion).not.toHaveBeenCalled();
+      expect(fetchProofServerReady).not.toHaveBeenCalled();
+
+      // Node still fetched
+      expect(fetchSystemChain).toHaveBeenCalled();
+
+      // Proof server returns cached defaults
+      expect(state.proofServer.version).toBeNull();
+      expect(state.proofServer.ready).toBe(false);
+    });
+
+    it('skips proofVersions fetch when proofVersions polling is false', async () => {
+      setupAllMocksHealthy();
+      const collector = new StateCollector(mockConfig);
+      const polling: PollingConfig = { proofVersions: false };
+      const state = await collector.collect({ polling });
+
+      expect(fetchProofVersions).not.toHaveBeenCalled();
+
+      // Other proof server fetches still happen
+      expect(fetchProofServerVersion).toHaveBeenCalled();
+      expect(fetchProofServerReady).toHaveBeenCalled();
+
+      // proofVersions falls back to cached default (null)
+      expect(state.proofServer.proofVersions).toBeNull();
+    });
+
+    it('skips docker fetches when docker polling is false', async () => {
+      setupAllMocksHealthy();
+      const collector = new StateCollector(mockConfig);
+      const polling: PollingConfig = { docker: false };
+      const state = await collector.collect({ polling });
+
+      expect(composePs).not.toHaveBeenCalled();
+      expect(composeLogs).not.toHaveBeenCalled();
+
+      // Returns cached defaults
+      expect(state.containers).toEqual([]);
+      expect(state.logs).toEqual([]);
+    });
+
+    it('skips health fetches when health polling is false', async () => {
+      setupAllMocksHealthy();
+      const collector = new StateCollector(mockConfig);
+      const polling: PollingConfig = { health: false };
+      const state = await collector.collect({ polling });
+
+      expect(checkAllHealth).not.toHaveBeenCalled();
+
+      // Returns cached defaults
+      expect(state.health.node.status).toBe('unhealthy');
+      expect(state.health.node.history).toEqual([]);
+    });
+
+    it('reuses cached values from a previous fetch when polling is false', async () => {
+      const collector = new StateCollector(mockConfig);
+
+      // First collect: fetch everything
+      setupAllMocksHealthy();
+      const state1 = await collector.collect();
+      expect(state1.node.chain).toBe('Midnight Devnet');
+      expect(state1.proofServer.version).toBe('7.0.0');
+      expect(state1.containers).toHaveLength(3);
+
+      // Reset mocks to verify they're not called
+      vi.resetAllMocks();
+
+      // Second collect: skip node + docker, those should return cached values
+      setupAllMocksHealthy(); // re-setup for sections that WILL be fetched
+      const polling: PollingConfig = { node: false, docker: false };
+      const state2 = await collector.collect({ polling });
+
+      expect(fetchSystemChain).not.toHaveBeenCalled();
+      expect(composePs).not.toHaveBeenCalled();
+      expect(composeLogs).not.toHaveBeenCalled();
+
+      // Cached node data from first collect
+      expect(state2.node.chain).toBe('Midnight Devnet');
+      expect(state2.node.blockHeight).toBe(42);
+
+      // Cached docker data from first collect
+      expect(state2.containers).toHaveLength(3);
+      expect(state2.logs.length).toBeGreaterThan(0);
+
+      // Proof server was re-fetched
+      expect(fetchProofServerVersion).toHaveBeenCalled();
+    });
+
+    it('skips all fetches when all polling flags are false', async () => {
+      setupAllMocksHealthy();
+      const collector = new StateCollector(mockConfig);
+      const polling: PollingConfig = {
+        node: false,
+        indexer: false,
+        proofServer: false,
+        proofVersions: false,
+        docker: false,
+        health: false,
+      };
+      const state = await collector.collect({ polling });
+
+      expect(fetchSystemChain).not.toHaveBeenCalled();
+      expect(fetchSystemName).not.toHaveBeenCalled();
+      expect(fetchSystemVersion).not.toHaveBeenCalled();
+      expect(fetchSystemHealth).not.toHaveBeenCalled();
+      expect(fetchBestBlockHeader).not.toHaveBeenCalled();
+      expect(fetchProofServerVersion).not.toHaveBeenCalled();
+      expect(fetchProofServerReady).not.toHaveBeenCalled();
+      expect(fetchProofVersions).not.toHaveBeenCalled();
+      expect(composePs).not.toHaveBeenCalled();
+      expect(composeLogs).not.toHaveBeenCalled();
+      expect(checkAllHealth).not.toHaveBeenCalled();
+
+      // Still returns a valid state with cached defaults
+      expect(state.serverTime).toBeTruthy();
+      expect(state.walletSyncStatus).toBe('idle');
+      expect(state.networkStatus).toBe('unknown');
     });
   });
 });

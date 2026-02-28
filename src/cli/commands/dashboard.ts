@@ -32,6 +32,9 @@ export function registerDashboardCommand(program: Command, manager: NetworkManag
       const preferredPort = parseInt(opts.port, 10);
       const port = await findOpenPort(preferredPort);
 
+      // Detect if network is already running before creating the app
+      await manager.detectRunningNetwork();
+
       const { app, setupWebSocket, startPolling, shutdown } = createDashboardApp({
         config: manager.config,
         manager,

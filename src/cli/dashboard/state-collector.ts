@@ -16,7 +16,18 @@ import {
 import { composePs, composeLogs } from '../../core/docker.js';
 import { checkAllHealth } from '../../core/health.js';
 
+export type WalletSyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
+
+export interface CollectOptions {
+  walletInfo?: WalletInfo;
+  networkStatus?: string;
+  polling?: PollingConfig;
+  walletSyncStatus?: WalletSyncStatus;
+}
+
 export interface DashboardState {
+  serverTime: string;
+  walletSyncStatus: WalletSyncStatus;
   node: {
     chain: string | null;
     name: string | null;
@@ -56,6 +67,15 @@ export interface DashboardState {
   networkStatus: string;
 }
 
+export interface PollingConfig {
+  node?: boolean;
+  indexer?: boolean;
+  proofServer?: boolean;
+  proofVersions?: boolean;
+  docker?: boolean;
+  health?: boolean;
+}
+
 export interface WalletInfo {
   address: string | null;
   connected: boolean;
@@ -82,11 +102,40 @@ export class StateCollector {
   private lastBlockHeight: number | null = null;
   private lastBlockTime: number | null = null;
 
+  // Cached values for per-service polling
+  private cachedNode: DashboardState['node'] = {
+    chain: null, name: null, version: null, blockHeight: null,
+    avgBlockTime: null, peers: null, syncing: null,
+  };
+  private cachedIndexer: DashboardState['indexer'] = { ready: false, responseTime: null };
+  private cachedProofServer: DashboardState['proofServer'] = {
+    version: null, ready: false, jobsProcessing: null,
+    jobsPending: null, jobCapacity: null, proofVersions: null,
+  };
+  private cachedHealth: DashboardState['health'] = {
+    node: { status: 'unhealthy', history: [] },
+    indexer: { status: 'unhealthy', history: [] },
+    proofServer: { status: 'unhealthy', history: [] },
+  };
+  private cachedContainers: ServiceStatus[] = [];
+  private cachedLogs: ParsedLogLine[] = [];
+
   constructor(config: NetworkConfig) {
     this.config = config;
   }
 
-  async collect(walletInfo?: WalletInfo, networkStatus?: string): Promise<DashboardState> {
+  async collect(opts?: CollectOptions): Promise<DashboardState> {
+    const { walletInfo, networkStatus, polling, walletSyncStatus } = opts ?? {};
+
+    // When polling is undefined, all sections are fetched (backward compatible)
+    const fetchNode = polling?.node !== false;
+    const fetchIndexer = polling?.indexer !== false;
+    const fetchProofServer = polling?.proofServer !== false;
+    const fetchProofVer = polling?.proofVersions !== false;
+    const fetchDocker = polling?.docker !== false;
+    const fetchHealth = polling?.health !== false;
+
+    // Build fetch promises conditionally
     const [
       chain,
       name,
@@ -100,58 +149,42 @@ export class StateCollector {
       rawLogs,
       healthReport,
     ] = await Promise.all([
-      safeCall(() => fetchSystemChain(this.config.node), null),
-      safeCall(() => fetchSystemName(this.config.node), null),
-      safeCall(() => fetchSystemVersion(this.config.node), null),
-      safeCall(() => fetchSystemHealth(this.config.node), null),
-      safeCall(() => fetchBestBlockHeader(this.config.node), null),
-      safeCall(() => fetchProofServerVersion(this.config.proofServer), null),
-      safeCall(() => fetchProofServerReady(this.config.proofServer), null),
-      safeCall(() => fetchProofVersions(this.config.proofServer), null),
-      safeCall(() => composePs(), []),
-      safeCall(() => composeLogs({ lines: 100 }), ''),
-      safeCall(() => checkAllHealth(this.config), null),
+      fetchNode ? safeCall(() => fetchSystemChain(this.config.node), null) : Promise.resolve(null),
+      fetchNode ? safeCall(() => fetchSystemName(this.config.node), null) : Promise.resolve(null),
+      fetchNode ? safeCall(() => fetchSystemVersion(this.config.node), null) : Promise.resolve(null),
+      fetchNode ? safeCall(() => fetchSystemHealth(this.config.node), null) : Promise.resolve(null),
+      fetchNode ? safeCall(() => fetchBestBlockHeader(this.config.node), null) : Promise.resolve(null),
+      fetchProofServer ? safeCall(() => fetchProofServerVersion(this.config.proofServer), null) : Promise.resolve(null),
+      fetchProofServer ? safeCall(() => fetchProofServerReady(this.config.proofServer), null) : Promise.resolve(null),
+      fetchProofVer ? safeCall(() => fetchProofVersions(this.config.proofServer), null) : Promise.resolve(null),
+      fetchDocker ? safeCall(() => composePs(), []) : Promise.resolve(null),
+      fetchDocker ? safeCall(() => composeLogs({ lines: 100 }), '') : Promise.resolve(null),
+      fetchHealth ? safeCall(() => checkAllHealth(this.config), null) : Promise.resolve(null),
     ]);
 
-    // Compute avgBlockTime
-    const blockHeight = blockHeader?.number ?? null;
-    let avgBlockTime: number | null = null;
-    const now = Date.now();
+    // --- Node section ---
+    if (fetchNode) {
+      const blockHeight = blockHeader?.number ?? null;
+      let avgBlockTime: number | null = null;
+      const now = Date.now();
 
-    if (
-      blockHeight !== null &&
-      this.lastBlockHeight !== null &&
-      this.lastBlockTime !== null &&
-      blockHeight > this.lastBlockHeight
-    ) {
-      const elapsed = now - this.lastBlockTime;
-      const blocksProduced = blockHeight - this.lastBlockHeight;
-      avgBlockTime = elapsed / blocksProduced;
-    }
+      if (
+        blockHeight !== null &&
+        this.lastBlockHeight !== null &&
+        this.lastBlockTime !== null &&
+        blockHeight > this.lastBlockHeight
+      ) {
+        const elapsed = now - this.lastBlockTime;
+        const blocksProduced = blockHeight - this.lastBlockHeight;
+        avgBlockTime = elapsed / blocksProduced;
+      }
 
-    if (blockHeight !== null && (this.lastBlockHeight === null || blockHeight > this.lastBlockHeight)) {
-      this.lastBlockHeight = blockHeight;
-      this.lastBlockTime = now;
-    }
+      if (blockHeight !== null && (this.lastBlockHeight === null || blockHeight > this.lastBlockHeight)) {
+        this.lastBlockHeight = blockHeight;
+        this.lastBlockTime = now;
+      }
 
-    // Update response time history
-    if (healthReport?.node.responseTime != null) {
-      this.nodeHistory.push(healthReport.node.responseTime);
-      if (this.nodeHistory.length > MAX_HISTORY) this.nodeHistory.shift();
-    }
-    if (healthReport?.indexer.responseTime != null) {
-      this.indexerHistory.push(healthReport.indexer.responseTime);
-      if (this.indexerHistory.length > MAX_HISTORY) this.indexerHistory.shift();
-    }
-    if (healthReport?.proofServer.responseTime != null) {
-      this.proofHistory.push(healthReport.proofServer.responseTime);
-      if (this.proofHistory.length > MAX_HISTORY) this.proofHistory.shift();
-    }
-
-    const logs = parseLogLines(rawLogs);
-
-    return {
-      node: {
+      this.cachedNode = {
         chain,
         name,
         version,
@@ -159,27 +192,48 @@ export class StateCollector {
         avgBlockTime,
         peers: systemHealth?.peers ?? null,
         syncing: systemHealth?.isSyncing ?? null,
-      },
-      indexer: {
+      };
+    }
+
+    // --- Indexer section (derived from health report) ---
+    if (fetchIndexer && fetchHealth) {
+      this.cachedIndexer = {
         ready: healthReport?.indexer.healthy ?? false,
         responseTime: healthReport?.indexer.responseTime ?? null,
-      },
-      proofServer: {
+      };
+    }
+
+    // --- Proof server section ---
+    if (fetchProofServer) {
+      this.cachedProofServer = {
         version: proofVersion,
         ready: proofReady?.status === 'ok',
         jobsProcessing: proofReady?.jobsProcessing ?? null,
         jobsPending: proofReady?.jobsPending ?? null,
         jobCapacity: proofReady?.jobCapacity ?? null,
-        proofVersions,
-      },
-      wallet: walletInfo ?? {
-        address: null,
-        connected: false,
-        unshielded: '0',
-        shielded: '0',
-        dust: '0',
-      },
-      health: {
+        proofVersions: fetchProofVer ? proofVersions : this.cachedProofServer.proofVersions,
+      };
+    } else if (fetchProofVer) {
+      // Only proofVersions fetched, merge into cached
+      this.cachedProofServer = { ...this.cachedProofServer, proofVersions };
+    }
+
+    // --- Health section ---
+    if (fetchHealth) {
+      if (healthReport?.node.responseTime != null) {
+        this.nodeHistory.push(healthReport.node.responseTime);
+        if (this.nodeHistory.length > MAX_HISTORY) this.nodeHistory.shift();
+      }
+      if (healthReport?.indexer.responseTime != null) {
+        this.indexerHistory.push(healthReport.indexer.responseTime);
+        if (this.indexerHistory.length > MAX_HISTORY) this.indexerHistory.shift();
+      }
+      if (healthReport?.proofServer.responseTime != null) {
+        this.proofHistory.push(healthReport.proofServer.responseTime);
+        if (this.proofHistory.length > MAX_HISTORY) this.proofHistory.shift();
+      }
+
+      this.cachedHealth = {
         node: {
           status: healthReport?.node.healthy ? 'healthy' : 'unhealthy',
           history: [...this.nodeHistory],
@@ -192,9 +246,31 @@ export class StateCollector {
           status: healthReport?.proofServer.healthy ? 'healthy' : 'unhealthy',
           history: [...this.proofHistory],
         },
+      };
+    }
+
+    // --- Docker section ---
+    if (fetchDocker) {
+      this.cachedContainers = containers ?? [];
+      this.cachedLogs = parseLogLines(rawLogs ?? '');
+    }
+
+    return {
+      serverTime: new Date().toISOString(),
+      walletSyncStatus: walletSyncStatus ?? 'idle',
+      node: { ...this.cachedNode },
+      indexer: { ...this.cachedIndexer },
+      proofServer: { ...this.cachedProofServer },
+      wallet: walletInfo ?? {
+        address: null,
+        connected: false,
+        unshielded: '0',
+        shielded: '0',
+        dust: '0',
       },
-      containers,
-      logs,
+      health: this.cachedHealth,
+      containers: [...this.cachedContainers],
+      logs: [...this.cachedLogs],
       networkStatus: networkStatus ?? 'unknown',
     };
   }

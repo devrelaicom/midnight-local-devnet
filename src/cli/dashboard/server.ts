@@ -3,9 +3,9 @@ import { WebSocketServer, type WebSocket as WsWebSocket } from 'ws';
 import type { Server } from 'node:http';
 import type { NetworkConfig } from '../../core/types.js';
 import type { NetworkManager } from '../../core/network-manager.js';
-import { StateCollector, type WalletInfo, type PollingConfig, type WalletSyncStatus } from './state-collector.js';
+import { StateCollector, type WalletInfo, type WalletBalanceInfo, type PollingConfig, type WalletSyncStatus } from './state-collector.js';
 import { generateDashboardHtml } from './html.js';
-import { getWalletBalances, getWalletAddress, deriveAddressFromMnemonic, generateNewMnemonic } from '../../core/wallet.js';
+import { getWalletBalances, getWalletAddress, deriveAddressFromMnemonic, generateNewMnemonic, initWalletFromMnemonic, closeWallet, type WalletContext } from '../../core/wallet.js';
 
 export interface DashboardServerOptions {
   config: NetworkConfig;
@@ -37,6 +37,9 @@ export function createDashboardApp(opts: DashboardServerOptions) {
   let walletSyncPromise: Promise<void> | null = null;
   let masterWalletAddress: string | null = null;
   let lastStateJson: string | null = null;
+
+  // ---------- Registered wallet contexts (non-master wallets) ----------
+  const registeredWallets = new Map<string, { mnemonic: string; ctx: WalletContext | null; initializing: boolean }>();
 
   // ---------- GET / — serve dashboard HTML ----------
   app.get('/', (c) => {
@@ -76,6 +79,7 @@ export function createDashboardApp(opts: DashboardServerOptions) {
         type?: string;
         action?: string;
         mnemonic?: string;
+        address?: string;
         service?: string;
         interval?: number;
       };
@@ -91,7 +95,7 @@ export function createDashboardApp(opts: DashboardServerOptions) {
   async function handleCommand(
     ws: WsWebSocket,
     action: string,
-    msg: { mnemonic?: string; service?: string; interval?: number; accounts?: Array<{ name: string; mnemonic: string }> },
+    msg: { mnemonic?: string; address?: string; service?: string; interval?: number; accounts?: Array<{ name: string; mnemonic: string }> },
   ) {
     try {
       if (action === 'start') {
@@ -143,6 +147,52 @@ export function createDashboardApp(opts: DashboardServerOptions) {
           const error = err instanceof Error ? err.message : String(err);
           sendToClient(ws, { type: 'result', action, success: false, error });
         }
+        return;
+      } else if (action === 'register-wallet') {
+        const mnemonic = msg.mnemonic;
+        if (!mnemonic) {
+          sendToClient(ws, { type: 'result', action, success: false, error: 'Missing mnemonic' });
+          return;
+        }
+        try {
+          const address = deriveAddressFromMnemonic(mnemonic, config.networkId);
+          // Deduplicate by address
+          if (!registeredWallets.has(address)) {
+            registeredWallets.set(address, { mnemonic, ctx: null, initializing: true });
+            // Initialize wallet context in background
+            initWalletFromMnemonic(mnemonic, config).then((ctx) => {
+              const entry = registeredWallets.get(address);
+              if (entry) {
+                entry.ctx = ctx;
+                entry.initializing = false;
+              }
+            }).catch(() => {
+              const entry = registeredWallets.get(address);
+              if (entry) {
+                entry.initializing = false;
+              }
+            });
+          }
+          sendToClient(ws, { type: 'register-result', address, success: true });
+        } catch (err) {
+          const error = err instanceof Error ? err.message : String(err);
+          sendToClient(ws, { type: 'result', action, success: false, error });
+        }
+        return;
+      } else if (action === 'unregister-wallet') {
+        const address = msg.address;
+        if (!address) {
+          sendToClient(ws, { type: 'result', action, success: false, error: 'Missing address' });
+          return;
+        }
+        const entry = registeredWallets.get(address);
+        if (entry) {
+          if (entry.ctx) {
+            closeWallet(entry.ctx).catch(() => {});
+          }
+          registeredWallets.delete(address);
+        }
+        sendToClient(ws, { type: 'result', action, success: true });
         return;
       } else if (action === 'set-polling') {
         const { service, interval } = msg;
@@ -252,11 +302,32 @@ export function createDashboardApp(opts: DashboardServerOptions) {
         }
       }
 
+      // Collect balances from registered (non-master) wallets
+      const walletBalances: Record<string, WalletBalanceInfo> = {};
+      for (const [address, entry] of registeredWallets) {
+        if (entry.ctx && !entry.initializing) {
+          try {
+            const bal = await getWalletBalances(entry.ctx);
+            walletBalances[address] = {
+              unshielded: bal.unshielded.toString(),
+              shielded: bal.shielded.toString(),
+              dust: bal.dust.toString(),
+              connected: true,
+            };
+          } catch {
+            walletBalances[address] = { unshielded: '0', shielded: '0', dust: '0', connected: true };
+          }
+        } else {
+          walletBalances[address] = { unshielded: '0', shielded: '0', dust: '0', connected: false };
+        }
+      }
+
       const state = await collector.collect({
         walletInfo,
         networkStatus: manager.getStatus(),
         polling,
         walletSyncStatus,
+        walletBalances,
       });
 
       // JSON.stringify with bigint-safe replacer (just in case)
@@ -290,6 +361,13 @@ export function createDashboardApp(opts: DashboardServerOptions) {
       ws.close();
     }
     clients.clear();
+    // Close all registered wallet contexts
+    for (const [, entry] of registeredWallets) {
+      if (entry.ctx) {
+        closeWallet(entry.ctx).catch(() => {});
+      }
+    }
+    registeredWallets.clear();
   }
 
   return {

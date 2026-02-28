@@ -1187,6 +1187,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       networkStatus: 'unknown',
       walletSyncStatus: 'idle',
       serverTime: '',
+      walletBalances: {},
     };
 
     // --- Toast component ---
@@ -1445,6 +1446,29 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       localStorage.setItem(WALLETS_KEY, JSON.stringify(wallets));
     }
 
+    // --- localStorage helpers for wallet mnemonics (keyed by address) ---
+    const MNEMONICS_KEY = 'mn-mnemonics';
+
+    function loadMnemonics() {
+      try {
+        const raw = localStorage.getItem(MNEMONICS_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { /* ignore */ }
+      return {};
+    }
+
+    function saveMnemonic(address, mnemonic) {
+      const all = loadMnemonics();
+      all[address] = mnemonic;
+      localStorage.setItem(MNEMONICS_KEY, JSON.stringify(all));
+    }
+
+    function removeMnemonic(address) {
+      const all = loadMnemonics();
+      delete all[address];
+      localStorage.setItem(MNEMONICS_KEY, JSON.stringify(all));
+    }
+
     // --- ImportWalletModal ---
     function ImportWalletModal({ onClose, onImport, sendMessage, deriveResult, deriveAccountsResult }) {
       const [tab, setTab] = useState('mnemonic');
@@ -1521,17 +1545,24 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       }, [fileAccounts, sendMessage]);
 
       const handleImportFile = useCallback(() => {
-        if (!fileResults) return;
-        for (const account of fileResults) {
+        if (!fileResults || !fileAccounts) return;
+        for (let i = 0; i < fileResults.length; i++) {
+          const account = fileResults[i];
           onImport({
             id: crypto.randomUUID(),
             publicKey: account.address,
             displayName: account.name || 'Imported Wallet',
             hasMnemonic: true,
           });
+          // Store mnemonic and register with server for balance tracking
+          const mnemonicStr = fileAccounts[i] && fileAccounts[i].mnemonic;
+          if (mnemonicStr) {
+            saveMnemonic(account.address, mnemonicStr);
+            sendMessage({ type: 'command', action: 'register-wallet', mnemonic: mnemonicStr });
+          }
         }
         onClose();
-      }, [fileResults, onImport, onClose]);
+      }, [fileResults, fileAccounts, onImport, onClose, sendMessage]);
 
       const handleImport = useCallback(() => {
         if (tab === 'mnemonic') {
@@ -1542,6 +1573,9 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
             displayName: displayName.trim() || 'Imported Wallet',
             hasMnemonic: true,
           });
+          // Store mnemonic locally and register with server for balance tracking
+          saveMnemonic(derivedAddress, mnemonic.trim());
+          sendMessage({ type: 'command', action: 'register-wallet', mnemonic: mnemonic.trim() });
         } else {
           if (!address.trim()) return;
           onImport({
@@ -1551,7 +1585,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
           });
         }
         onClose();
-      }, [tab, derivedAddress, address, displayName, onImport, onClose]);
+      }, [tab, derivedAddress, address, displayName, mnemonic, onImport, onClose, sendMessage]);
 
       return html\`
         <div class="modal-overlay" onClick=\${(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -1718,8 +1752,11 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
           displayName: 'Generated Wallet',
           hasMnemonic: true,
         });
+        // Store mnemonic locally and register with server for balance tracking
+        saveMnemonic(result.address, result.mnemonic);
+        sendMessage({ type: 'command', action: 'register-wallet', mnemonic: result.mnemonic });
         onClose();
-      }, [result, onImport, onClose]);
+      }, [result, onImport, onClose, sendMessage]);
 
       return html\`
         <div class="modal-overlay" onClick=\${(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -1766,7 +1803,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
     }
 
     // --- WalletCard ---
-    function WalletCard({ wallet, walletSyncStatus, sendMessage, onOpenImportModal, onOpenGenerateModal, importHandlerRef }) {
+    function WalletCard({ wallet, walletSyncStatus, walletBalances, sendMessage, onOpenImportModal, onOpenGenerateModal, importHandlerRef }) {
       // Load wallets from localStorage, ensuring master wallet is always first
       const [wallets, setWallets] = useState(() => {
         const stored = loadWallets();
@@ -1779,6 +1816,17 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
         }
         return stored;
       });
+
+      // Re-register mnemonic wallets with server on mount (e.g. after reconnect)
+      const registeredRef = useRef(false);
+      useEffect(() => {
+        if (registeredRef.current) return;
+        registeredRef.current = true;
+        const mnemonics = loadMnemonics();
+        for (const [, mn] of Object.entries(mnemonics)) {
+          sendMessage({ type: 'command', action: 'register-wallet', mnemonic: mn });
+        }
+      }, [sendMessage]);
 
       const [selectedId, setSelectedId] = useState('master');
       const [editingId, setEditingId] = useState(null);
@@ -1833,14 +1881,20 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
       }, [editingId, editName]);
 
       const handleDelete = useCallback((id) => {
+        const toDelete = wallets.find(w => w.id === id);
         setWallets(prev => {
           const updated = prev.filter(w => w.id !== id);
           saveWallets(updated);
           return updated;
         });
+        // Unregister wallet context and remove stored mnemonic
+        if (toDelete && toDelete.publicKey) {
+          removeMnemonic(toDelete.publicKey);
+          sendMessage({ type: 'command', action: 'unregister-wallet', address: toDelete.publicKey });
+        }
         setDeletingId(null);
         if (selectedId === id) setSelectedId('master');
-      }, [selectedId]);
+      }, [selectedId, wallets, sendMessage]);
 
       const handleCopy = useCallback((text) => {
         navigator.clipboard.writeText(text).then(() => {
@@ -1929,33 +1983,71 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
                 \` : null}
               </div>
             </div>
-            \${showBalances ? html\`
-              <div class="balance-item">
-                <div class="balance-value">\${formatBalance(wallet.unshielded)}</div>
-                <div class="balance-label">NIGHT (Unshielded)</div>
-              </div>
-              <div class="balance-item">
-                <div class="balance-value">\${formatBalance(wallet.shielded)}</div>
-                <div class="balance-label">NIGHT (Shielded)</div>
-              </div>
-              <div class="balance-item">
-                <div class="balance-value">\${formatBalance(wallet.dust)}</div>
-                <div class="balance-label">DUST</div>
-              </div>
-            \` : isMaster && walletSyncStatus === 'syncing' ? html\`
-              <div class="balance-item" style="grid-column: 1 / -1; text-align: center;">
-                <div class="sync-indicator" style="justify-content: center;">
-                  <span class="sync-spinner"></span>
-                  Syncing balances...
-                </div>
-              </div>
-            \` : !isMaster ? html\`
-              <div class="balance-item" style="grid-column: 1 / -1; text-align: center;">
-                <div style="font-size: 13px; color: var(--mn-text-muted); padding: 8px 0;">
-                  \${selectedWallet && selectedWallet.hasMnemonic ? 'Derived address — balances not available' : 'Address only — balances not available'}
-                </div>
-              </div>
-            \` : null}
+            \${(() => {
+              if (isMaster && walletSyncStatus === 'syncing') {
+                return html\`
+                  <div class="balance-item" style="grid-column: 1 / -1; text-align: center;">
+                    <div class="sync-indicator" style="justify-content: center;">
+                      <span class="sync-spinner"></span>
+                      Syncing balances...
+                    </div>
+                  </div>
+                \`;
+              }
+              if (showBalances) {
+                return html\`
+                  <div class="balance-item">
+                    <div class="balance-value">\${formatBalance(wallet.unshielded)}</div>
+                    <div class="balance-label">NIGHT (Unshielded)</div>
+                  </div>
+                  <div class="balance-item">
+                    <div class="balance-value">\${formatBalance(wallet.shielded)}</div>
+                    <div class="balance-label">NIGHT (Shielded)</div>
+                  </div>
+                  <div class="balance-item">
+                    <div class="balance-value">\${formatBalance(wallet.dust)}</div>
+                    <div class="balance-label">DUST</div>
+                  </div>
+                \`;
+              }
+              if (!isMaster && selectedWallet) {
+                const wb = walletBalances && walletBalances[selectedWallet.publicKey];
+                if (wb && wb.connected) {
+                  return html\`
+                    <div class="balance-item">
+                      <div class="balance-value">\${formatBalance(wb.unshielded)}</div>
+                      <div class="balance-label">NIGHT (Unshielded)</div>
+                    </div>
+                    <div class="balance-item">
+                      <div class="balance-value">\${formatBalance(wb.shielded)}</div>
+                      <div class="balance-label">NIGHT (Shielded)</div>
+                    </div>
+                    <div class="balance-item">
+                      <div class="balance-value">\${formatBalance(wb.dust)}</div>
+                      <div class="balance-label">DUST</div>
+                    </div>
+                  \`;
+                }
+                if (wb && !wb.connected) {
+                  return html\`
+                    <div class="balance-item" style="grid-column: 1 / -1; text-align: center;">
+                      <div class="sync-indicator" style="justify-content: center;">
+                        <span class="sync-spinner"></span>
+                        Initializing wallet...
+                      </div>
+                    </div>
+                  \`;
+                }
+                return html\`
+                  <div class="balance-item" style="grid-column: 1 / -1; text-align: center;">
+                    <div style="font-size: 13px; color: var(--mn-text-muted); padding: 8px 0;">
+                      Address only — balances not available
+                    </div>
+                  </div>
+                \`;
+              }
+              return null;
+            })()}
           </div>
         </div>
 
@@ -2188,7 +2280,7 @@ export function generateDashboardHtml({ wsUrl }: { wsUrl: string }): string {
           <\${ProofServerCard} proofServer=\${state.proofServer} health=\${state.health.proofServer} serverTime=\${state.serverTime} />
         </div>
         <div class="cards-grid">
-          <\${WalletCard} wallet=\${state.wallet} walletSyncStatus=\${state.walletSyncStatus} sendMessage=\${sendMessage} onOpenImportModal=\${() => { setDeriveResult(null); setDeriveAccountsResult(null); setShowImportModal(true); }} onOpenGenerateModal=\${() => { setGenerateResult(null); setShowGenerateModal(true); }} importHandlerRef=\${importHandlerRef} />
+          <\${WalletCard} wallet=\${state.wallet} walletSyncStatus=\${state.walletSyncStatus} walletBalances=\${state.walletBalances} sendMessage=\${sendMessage} onOpenImportModal=\${() => { setDeriveResult(null); setDeriveAccountsResult(null); setShowImportModal(true); }} onOpenGenerateModal=\${() => { setGenerateResult(null); setShowGenerateModal(true); }} importHandlerRef=\${importHandlerRef} />
         </div>
         <div class="cards-grid">
           <\${ResponseChart} health=\${state.health} />

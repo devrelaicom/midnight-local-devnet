@@ -18,11 +18,19 @@ import { checkAllHealth } from '../../core/health.js';
 
 export type WalletSyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 
+export interface WalletBalanceInfo {
+  unshielded: string;
+  shielded: string;
+  dust: string;
+  connected: boolean;
+}
+
 export interface CollectOptions {
   walletInfo?: WalletInfo;
   networkStatus?: string;
   polling?: PollingConfig;
   walletSyncStatus?: WalletSyncStatus;
+  walletBalances?: Record<string, WalletBalanceInfo>;
 }
 
 export interface DashboardState {
@@ -65,6 +73,7 @@ export interface DashboardState {
   containers: ServiceStatus[];
   logs: ParsedLogLine[];
   networkStatus: string;
+  walletBalances: Record<string, WalletBalanceInfo>;
 }
 
 export interface PollingConfig {
@@ -125,7 +134,7 @@ export class StateCollector {
   }
 
   async collect(opts?: CollectOptions): Promise<DashboardState> {
-    const { walletInfo, networkStatus, polling, walletSyncStatus } = opts ?? {};
+    const { walletInfo, networkStatus, polling, walletSyncStatus, walletBalances } = opts ?? {};
 
     // When polling is undefined, all sections are fetched (backward compatible)
     const fetchNode = polling?.node !== false;
@@ -279,6 +288,7 @@ export class StateCollector {
       containers: [...this.cachedContainers],
       logs: [...this.cachedLogs],
       networkStatus: networkStatus ?? 'unknown',
+      walletBalances: walletBalances ?? {},
     };
   }
 }

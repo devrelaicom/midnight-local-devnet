@@ -37,7 +37,7 @@ export async function checkAllHealth(config?: NetworkConfig): Promise<HealthRepo
   const [node, indexer, proofServer] = await Promise.all([
     checkEndpoint(`${cfg.node}/health`),
     checkEndpoint(`${indexerOrigin}/ready`),
-    checkEndpoint(`${cfg.proofServer}/version`),
+    checkEndpoint(`${cfg.proofServer}/health`),
   ]);
 
   return {

@@ -589,6 +589,7 @@ describe('StateCollector', () => {
       expect(state).toHaveProperty('containers');
       expect(state).toHaveProperty('logs');
       expect(state).toHaveProperty('networkStatus');
+      expect(state).toHaveProperty('walletBalances');
     });
 
     it('node has all required properties', async () => {
@@ -667,6 +668,28 @@ describe('StateCollector', () => {
 
       const error = await collector.collect({ walletSyncStatus: 'error' });
       expect(error.walletSyncStatus).toBe('error');
+    });
+  });
+
+  describe('walletBalances', () => {
+    it('defaults to empty object when not provided', async () => {
+      setupAllMocksHealthy();
+      const collector = new StateCollector(mockConfig);
+      const state = await collector.collect();
+
+      expect(state.walletBalances).toEqual({});
+    });
+
+    it('passes through walletBalances when provided', async () => {
+      setupAllMocksHealthy();
+      const collector = new StateCollector(mockConfig);
+      const walletBalances = {
+        'addr1': { unshielded: '100', shielded: '50', dust: '10', connected: true },
+        'addr2': { unshielded: '0', shielded: '0', dust: '0', connected: false },
+      };
+      const state = await collector.collect({ walletBalances });
+
+      expect(state.walletBalances).toEqual(walletBalances);
     });
   });
 

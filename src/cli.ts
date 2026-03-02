@@ -13,7 +13,8 @@ import { setLogger as setAccountsLogger } from './core/accounts.js';
 
 const manager = new NetworkManager();
 
-const logger = createLogger('info', process.stdout);
+const jsonMode = process.argv.includes('--json');
+const logger = createLogger('info', jsonMode ? process.stderr : process.stdout);
 setWalletLogger(logger);
 setFundingLogger(logger);
 setAccountsLogger(logger);
@@ -35,7 +36,8 @@ const program = new Command();
 program
   .name('midnight-local-devnet')
   .description('Manage a local Midnight development network')
-  .version('0.2.1');
+  .version('0.6.0')
+  .option('--json', 'Output results as JSON');
 
 registerNetworkCommands(program, manager);
 registerWalletCommands(program, manager);

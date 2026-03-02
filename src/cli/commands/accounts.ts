@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import type { NetworkManager } from '../../core/network-manager.js';
 import { generateAccounts, generateAndFundAccounts, writeAccountsFile } from '../../core/accounts.js';
+import { output, outputError, type OutputOptions } from '../output.js';
 
 export function registerAccountCommands(program: Command, manager: NetworkManager): void {
   program
@@ -11,32 +12,45 @@ export function registerAccountCommands(program: Command, manager: NetworkManage
     .option('--output <path>', 'Write to file in accounts.json format')
     .option('--fund', 'Fund accounts from master wallet')
     .option('--register-dust', 'Register DUST for funded accounts')
-    .action(async (opts) => {
-      const format = opts.format as 'mnemonic' | 'privateKey';
-      const count = parseInt(opts.count, 10);
+    .action(async function (this: Command, opts) {
+      const globals = this.optsWithGlobals() as OutputOptions;
+      try {
+        const format = opts.format as 'mnemonic' | 'privateKey';
+        const count = parseInt(opts.count, 10);
 
-      let accounts;
-      if (opts.fund) {
-        const wallet = await manager.ensureWallet();
-        accounts = await generateAndFundAccounts(wallet, manager.config, {
-          format,
-          count,
-          fund: true,
-          registerDust: opts.registerDust ?? false,
-        });
-      } else {
-        accounts = await generateAccounts({ format, count });
+        let accounts;
+        if (opts.fund) {
+          const wallet = await manager.ensureWallet();
+          accounts = await generateAndFundAccounts(wallet, manager.config, {
+            format,
+            count,
+            fund: true,
+            registerDust: opts.registerDust ?? false,
+          });
+        } else {
+          accounts = await generateAccounts({ format, count });
+        }
+
+        if (opts.output) {
+          await writeAccountsFile(opts.output, accounts);
+          if (!globals.json) console.log(`Accounts written to ${opts.output}`);
+        }
+
+        if (globals.json) {
+          output(accounts.map((a) => ({
+            name: a.name,
+            address: a.address || null,
+            ...(a.mnemonic ? { mnemonic: a.mnemonic } : {}),
+          })), globals);
+        } else {
+          console.table(accounts.map((a) => ({
+            Name: a.name,
+            Address: a.address || '(generated on fund)',
+            ...(a.mnemonic ? { Mnemonic: a.mnemonic.split(' ').slice(0, 3).join(' ') + '...' } : {}),
+          })));
+        }
+      } catch (err) {
+        outputError(err, globals);
       }
-
-      if (opts.output) {
-        await writeAccountsFile(opts.output, accounts);
-        console.log(`Accounts written to ${opts.output}`);
-      }
-
-      console.table(accounts.map((a) => ({
-        Name: a.name,
-        Address: a.address || '(generated on fund)',
-        ...(a.mnemonic ? { Mnemonic: a.mnemonic.split(' ').slice(0, 3).join(' ') + '...' } : {}),
-      })));
     });
 }

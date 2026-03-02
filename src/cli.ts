@@ -36,7 +36,7 @@ const program = new Command();
 program
   .name('midnight-local-devnet')
   .description('Manage a local Midnight development network')
-  .version('0.2.1')
+  .version('0.6.0')
   .option('--json', 'Output results as JSON');
 
 registerNetworkCommands(program, manager);

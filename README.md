@@ -46,6 +46,18 @@ The MCP server communicates over stdio and exposes tools and resources that an A
 
 All commands can be run via `npx @aaronbassett/midnight-local-devnet <command>`.
 
+### Global Options
+
+| Option | Description |
+|---|---|
+| `--json` | Output results as machine-parseable JSON on stdout |
+| `--version` | Show version number |
+| `--help` | Show help |
+
+When `--json` is active, only valid JSON is written to stdout. All progress messages and logs are redirected to stderr so the output can be piped directly to tools like `jq`.
+
+### Commands
+
 | Command | Description | Options |
 |---|---|---|
 | `start` | Start the local Midnight devnet | `--pull` Pull latest Docker images |
@@ -62,6 +74,23 @@ All commands can be run via `npx @aaronbassett/midnight-local-devnet <command>`.
 | `interactive` | Start interactive menu mode | |
 
 Running with no arguments displays help.
+
+### JSON Output
+
+Use the `--json` flag for scripting and automation:
+
+```bash
+# Get network status as JSON
+npx @aaronbassett/midnight-local-devnet status --json
+
+# Pipe to jq for filtering
+npx @aaronbassett/midnight-local-devnet health --json | jq '.allHealthy'
+
+# Generate accounts and capture output
+npx @aaronbassett/midnight-local-devnet generate-accounts --count 3 --json > accounts.json
+```
+
+Errors in `--json` mode produce `{"error": "message"}` on stdout with a non-zero exit code.
 
 ## Dashboard
 

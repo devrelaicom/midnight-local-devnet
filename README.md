@@ -298,3 +298,7 @@ This project is based on [midnight-local-network](https://github.com/hbulgarini/
 ## License
 
 MIT
+
+---
+
+This project extends the Midnight Network with additional developer tooling.
